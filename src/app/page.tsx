@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { describeFilters } from "@/lib/filters";
-import { STATUS_LABELS } from "@/lib/search-status";
 import { getSettings, listRecentSearches } from "@/lib/searches";
+import { RecentSearches } from "./recent-searches";
 import { SearchForm } from "./search-form";
 import { SettingsForm } from "./settings-form";
 
@@ -14,50 +12,12 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="grid gap-8 md:grid-cols-[2fr_1fr]">
-      <div className="space-y-8">
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h1 className="text-xl font-semibold">Find call centers</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Searches public sources for offshore call centers running US
-            insurance campaigns. Only company-level details are collected.
-          </p>
-          <SearchForm />
-        </section>
-
-        <section>
-          <h2 className="font-semibold">Recent searches</h2>
-          {recentSearches.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-600">No searches yet.</p>
-          ) : (
-            <ul className="mt-2 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
-              {recentSearches.map((search) => (
-                <li key={search.id}>
-                  <Link
-                    href={`/searches/${search.id}`}
-                    className="flex flex-wrap justify-between gap-2 px-4 py-3 text-sm hover:bg-slate-50"
-                  >
-                    <span className="font-medium">
-                      {describeFilters(search)}
-                    </span>
-                    <span className="text-slate-600">
-                      {STATUS_LABELS[search.status]} · {search.companiesFound}{" "}
-                      companies
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+    <div className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="min-w-0 space-y-6">
+        <SearchForm />
+        <RecentSearches searches={recentSearches} />
       </div>
-
-      <aside>
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="font-semibold">Settings</h2>
-          <SettingsForm initialSettings={settings} />
-        </section>
-      </aside>
+      <SettingsForm initialSettings={settings} />
     </div>
   );
 }

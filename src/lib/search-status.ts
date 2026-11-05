@@ -31,3 +31,15 @@ export type SearchProgress = {
 export function isActive(status: string) {
   return ACTIVE_STATUSES.includes(status);
 }
+
+export function getProgressPercent(search: {
+  status: string;
+  domainsToFetch: number;
+  domainsFetched: number;
+}) {
+  if (search.status === "scoring") return 100;
+  if (search.status === "fetching" && search.domainsToFetch > 0) {
+    return Math.round((search.domainsFetched / search.domainsToFetch) * 100);
+  }
+  return null;
+}

@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Settings } from "@/lib/searches";
 
 export function SettingsForm({
@@ -30,39 +34,48 @@ export function SettingsForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-3">
-      <NumberField
-        label="Credit cap per search"
-        help="Each new search query uses one credit, out of 1,000 free credits a month. Stored queries are free."
-        min={0}
-        max={1000}
-        value={creditCap}
-        onChange={setCreditCap}
-      />
-      <NumberField
-        label="Websites to read at once"
-        help="Higher is faster. Each website is still read one page at a time."
-        min={1}
-        max={20}
-        value={fetchConcurrency}
-        onChange={setFetchConcurrency}
-      />
-      <button
-        type="submit"
-        className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
-      >
-        Save
-      </button>
-      {message && (
-        <p role="status" className="text-sm text-slate-700">
-          {message}
-        </p>
-      )}
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h2>Settings</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <NumberField
+            id="credit-cap"
+            label="Credit cap per search"
+            help="Each new search query uses one credit, out of 1,000 free credits a month. Stored queries are free."
+            min={0}
+            max={1000}
+            value={creditCap}
+            onChange={setCreditCap}
+          />
+          <NumberField
+            id="fetch-concurrency"
+            label="Websites to read at once"
+            help="Higher is faster. Each website is still read one page at a time."
+            min={1}
+            max={20}
+            value={fetchConcurrency}
+            onChange={setFetchConcurrency}
+          />
+          <Button type="submit" variant="outline">
+            Save
+          </Button>
+          {message && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {message}
+            </p>
+          )}
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
 function NumberField({
+  id,
   label,
   help,
   min,
@@ -70,6 +83,7 @@ function NumberField({
   value,
   onChange,
 }: {
+  id: string;
   label: string;
   help: string;
   min: number;
@@ -78,19 +92,17 @@ function NumberField({
   onChange: (value: string) => void;
 }) {
   return (
-    <>
-      <label className="block text-sm font-medium">
-        {label}
-        <input
-          type="number"
-          min={min}
-          max={max}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-2 font-normal"
-        />
-      </label>
-      <p className="text-xs text-slate-600">{help}</p>
-    </>
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type="number"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <p className="text-xs text-muted-foreground">{help}</p>
+    </div>
   );
 }

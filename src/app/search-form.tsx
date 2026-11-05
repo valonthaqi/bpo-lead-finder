@@ -1,7 +1,21 @@
 "use client";
 
+import { SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
 import { CAMPAIGNS, COUNTRIES, MARKETS } from "@/lib/filters";
 
 const FIELDS = [
@@ -45,36 +59,51 @@ export function SearchForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
-        {FIELDS.map((field) => (
-          <label key={field.name} className="block text-sm font-medium">
-            {field.label}
-            <select
-              name={field.name}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2 py-2 font-normal"
-            >
-              {field.options.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
-      </div>
-      <button
-        type="submit"
-        disabled={!isJavaScriptReady || isStarting}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-      >
-        {isStarting ? "Starting..." : "Start search"}
-      </button>
-      {error && (
-        <p role="alert" className="text-sm text-red-700">
-          {error}
-        </p>
-      )}
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h1>Find call centers</h1>
+        </CardTitle>
+        <CardDescription>
+          Searches public sources for offshore call centers running US insurance
+          campaigns. Only company-level details are collected.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {FIELDS.map((field) => (
+              <div key={field.name} className="space-y-1.5">
+                <Label htmlFor={field.name}>{field.label}</Label>
+                <NativeSelect
+                  id={field.name}
+                  name={field.name}
+                  className="w-full"
+                >
+                  {field.options.map((option) => (
+                    <NativeSelectOption key={option.id} value={option.id}>
+                      {option.name}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              </div>
+            ))}
+          </div>
+          <Button
+            type="submit"
+            size="lg"
+            disabled={!isJavaScriptReady || isStarting}
+          >
+            <SearchIcon aria-hidden="true" />
+            {isStarting ? "Starting..." : "Start search"}
+          </Button>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+        </form>
+      </CardContent>
+    </Card>
   );
 }
