@@ -168,3 +168,9 @@ Measured on a 0-credit rerun with 50 stored queries and 89 websites. Before thes
 - **A parallel search can pass the early-stop point slightly.** Up to two queries already running still finish, and stay within the cap.
 - **Progressive results rebuild the whole ranking** from what's known so far and replace it in one transaction, at most every 3 seconds. Preliminary and final rows use the same dedupe and scoring code. This is simple, but rewrites every row each time, which would need revisiting for much larger result lists.
 - **Tavily's usage endpoint is skipped when nothing can be spent,** because it allows only 10 calls per 10 minutes.
+
+## 2026-11-05: Text is cleaned where it enters the app or gets cut
+
+A saved search failed with `invalid input syntax for type json`. Evidence quotes are cut at fixed positions, and a cut through an emoji leaves half of it, which Postgres `jsonb` rejects. One bad row rolled back the whole save. `cleanText` now removes half-emoji and null characters when evidence or page text is cut, and when a Tavily response is parsed, so a paid result can't fail to save for this reason.
+
+Failed searches now store the database's own message instead of the full query text, and the complete error goes to the terminal.
