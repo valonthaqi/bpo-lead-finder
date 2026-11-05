@@ -174,3 +174,11 @@ Measured on a 0-credit rerun with 50 stored queries and 89 websites. Before thes
 A saved search failed with `invalid input syntax for type json`. Evidence quotes are cut at fixed positions, and a cut through an emoji leaves half of it, which Postgres `jsonb` rejects. One bad row rolled back the whole save. `cleanText` now removes half-emoji and null characters when evidence or page text is cut, and when a Tavily response is parsed, so a paid result can't fail to save for this reason.
 
 Failed searches now store the database's own message instead of the full query text, and the complete error goes to the terminal.
+
+## 2026-11-05: Country lists don't count as a location
+
+Any site with a phone country dropdown or country picker was earning "names the selected country". A mention now counts only if the text around it has fewer than 6 country names and fewer than 3 `Name +code` pairs, and later mentions on the page are still checked. Across stored searches this removed 19 of 123 country reasons. The cost is that large companies whose real location menu lists many countries also lose these points, which seems the better error to make for finding offshore partners.
+
+## 2026-11-05: Search button disabled until the page is ready
+
+Clicking before the page's JavaScript runs used to reload the page with the filters in the URL and start nothing. The button is now sent disabled from the server and enabled once JavaScript takes over. `useSyncExternalStore` is used because it takes a separate server value, without setting state in an effect.
