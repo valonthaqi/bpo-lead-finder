@@ -1,4 +1,4 @@
-import { eq, gte, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { searches, searchQueries } from "../db/schema";
 import { readEnv } from "../env";
@@ -8,14 +8,18 @@ import {
   SEARCH_EXCLUDED_DOMAINS,
   SOURCES,
 } from "../sources";
+import { reserveCredit } from "./credits";
 import { normalizeDomain } from "./normalize";
 import {
   buildQueries,
-  getCreditsRemaining,
-  getStopReason,
+  MAX_QUERIES_WITHOUT_NEW_DOMAINS,
+  type PlannedQuery,
   type StopReason,
 } from "./queries";
+import { runWithLimit } from "./run-with-limit";
 import { getPlanUsage, searchTavily, tavilyResponseSchema } from "./tavily";
+
+const TAVILY_CONCURRENCY = 3;
 
 export type Candidate = {
   url: string;
@@ -39,16 +43,6 @@ function buildTavilyDomains(sourceId: string) {
     includeDomains: source?.domains ?? [],
     excludeDomains: SEARCH_EXCLUDED_DOMAINS,
   };
-}
-
-async function getLocalCreditsUsedThisMonth() {
-  const [{ total }] = await db
-    .select({
-      total: sql<number>`coalesce(sum(${searchQueries.creditsCharged}), 0)::int`,
-    })
-    .from(searchQueries)
-    .where(gte(searchQueries.createdAt, sql`date_trunc('month', now())`));
-  return total;
 }
 
 export async function discover(searchId: number): Promise<DiscoverResult> {
@@ -79,83 +73,12 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
       .map((row) => [row.key, row.rawResponse]),
   );
 
-  let creditsRemaining = getCreditsRemaining({
-    ...(await getPlanUsage(apiKey)),
-    localCreditsUsed: await getLocalCreditsUsedThisMonth(),
-  });
-  let creditsUsed = 0;
-  let queriesDone = 0;
-  let queriesWithoutNewDomains = 0;
-  let stopReason: StopReason | null = null;
   const candidates: Candidate[] = [];
   const allResults: Candidate[] = [];
   const domains = new Set<string>();
+  let queriesDone = 0;
 
-  for (const query of planned) {
-    let raw = storedResponses.get(query.key);
-
-    if (raw === undefined) {
-      stopReason ??= getStopReason({
-        creditsUsed,
-        creditCap: search.creditCap,
-        creditsRemaining,
-        queriesWithoutNewDomains,
-      });
-      if (stopReason) continue;
-
-      await db
-        .insert(searchQueries)
-        .values({
-          key: query.key,
-          source: query.source,
-          country: query.country,
-          text: query.text,
-          status: "pending",
-          creditsCharged: 1,
-        })
-        .onConflictDoUpdate({
-          target: searchQueries.key,
-          set: {
-            status: "pending",
-            creditsCharged: sql`${searchQueries.creditsCharged} + 1`,
-          },
-        });
-      creditsUsed += 1;
-      creditsRemaining -= 1;
-
-      const outcome = await searchTavily(apiKey, {
-        query: query.text,
-        country: query.country,
-        ...buildTavilyDomains(query.source),
-      });
-
-      if (outcome.kind !== "ok") {
-        await db
-          .update(searchQueries)
-          .set({ status: "failed" })
-          .where(eq(searchQueries.key, query.key));
-        await db
-          .update(searches)
-          .set({ creditsUsed })
-          .where(eq(searches.id, searchId));
-        if (outcome.kind === "plan_limit") {
-          stopReason = "no_credits";
-          continue;
-        }
-        throw new Error(outcome.message);
-      }
-
-      raw = outcome.raw;
-      const { results } = tavilyResponseSchema.parse(raw);
-      await db
-        .update(searchQueries)
-        .set({
-          status: results.length > 0 ? "done" : "empty",
-          rawResponse: raw,
-        })
-        .where(eq(searchQueries.key, query.key));
-    }
-
+  function addResponse(query: PlannedQuery, raw: unknown) {
     const domainCountBefore = domains.size;
     for (const result of tavilyResponseSchema.parse(raw).results) {
       const domain = normalizeDomain(result.url);
@@ -172,18 +95,85 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
       domains.add(domain);
       candidates.push(candidate);
     }
-    const source = SOURCES.find((item) => item.id === query.source);
-    if (source?.countsForEarlyStop) {
-      queriesWithoutNewDomains =
-        domains.size > domainCountBefore ? 0 : queriesWithoutNewDomains + 1;
-    }
     queriesDone += 1;
+    return domains.size > domainCountBefore;
+  }
 
-    await db
+  function saveProgress() {
+    return db
       .update(searches)
-      .set({ creditsUsed, queriesDone, domainsFound: domains.size })
+      .set({ queriesDone, domainsFound: domains.size })
       .where(eq(searches.id, searchId));
   }
+
+  for (const query of planned) {
+    const raw = storedResponses.get(query.key);
+    if (raw !== undefined) addResponse(query, raw);
+  }
+  await saveProgress();
+
+  const queriesToRun = planned.filter(
+    (query) => !storedResponses.has(query.key),
+  );
+  const plan =
+    queriesToRun.length > 0 && search.creditCap > 0
+      ? await getPlanUsage(apiKey)
+      : { planLimit: 0, planUsage: 0 };
+
+  let creditsUsed = 0;
+  let queriesWithoutNewDomains = 0;
+  let stopReason: StopReason | null = null;
+
+  await runWithLimit(queriesToRun, TAVILY_CONCURRENCY, async (query) => {
+    if (stopReason) return;
+    if (queriesWithoutNewDomains >= MAX_QUERIES_WITHOUT_NEW_DOMAINS) {
+      stopReason = "no_new_domains";
+      return;
+    }
+
+    const budgetStop = await reserveCredit(searchId, query, plan);
+    if (budgetStop) {
+      stopReason = budgetStop;
+      return;
+    }
+    creditsUsed += 1;
+
+    const outcome = await searchTavily(apiKey, {
+      query: query.text,
+      country: query.country,
+      ...buildTavilyDomains(query.source),
+    });
+
+    if (outcome.kind !== "ok") {
+      await db
+        .update(searchQueries)
+        .set({ status: "failed" })
+        .where(eq(searchQueries.key, query.key));
+      if (outcome.kind === "plan_limit") {
+        stopReason = "no_credits";
+        return;
+      }
+      throw new Error(outcome.message);
+    }
+
+    const { results } = tavilyResponseSchema.parse(outcome.raw);
+    await db
+      .update(searchQueries)
+      .set({
+        status: results.length > 0 ? "done" : "empty",
+        rawResponse: outcome.raw,
+      })
+      .where(eq(searchQueries.key, query.key));
+
+    const foundNewDomain = addResponse(query, outcome.raw);
+    const source = SOURCES.find((item) => item.id === query.source);
+    if (source?.countsForEarlyStop) {
+      queriesWithoutNewDomains = foundNewDomain
+        ? 0
+        : queriesWithoutNewDomains + 1;
+    }
+    await saveProgress();
+  });
 
   return {
     candidates,

@@ -73,16 +73,12 @@ export function getCreditsRemaining(credits: {
   );
 }
 
-export function getStopReason(state: {
+export function getBudgetStopReason(state: {
   creditsUsed: number;
   creditCap: number;
   creditsRemaining: number;
-  queriesWithoutNewDomains: number;
 }): StopReason | null {
   if (state.creditsUsed >= state.creditCap) return "credit_cap";
   if (state.creditsRemaining <= 0) return "no_credits";
-  if (state.queriesWithoutNewDomains >= MAX_QUERIES_WITHOUT_NEW_DOMAINS) {
-    return "no_new_domains";
-  }
   return null;
 }

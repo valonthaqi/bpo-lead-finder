@@ -23,9 +23,13 @@ const filters: Filters = {
 
 type TavilyStub = {
   creditsLeft?: number;
+  searchDelayMs?: number;
   searchResponse?: (query: string, callNumber: number) => Response;
   sites?: Record<string, string>;
 };
+
+let searchesRunning = 0;
+let mostSearchesRunning = 0;
 
 function uniqueDomainResponse(query: string) {
   const slug = query.toLowerCase().replace(/[^a-z]+/g, "");
@@ -36,6 +40,7 @@ function uniqueDomainResponse(query: string) {
 
 function stubTavily({
   creditsLeft = 500,
+  searchDelayMs = 0,
   searchResponse,
   sites = {},
 }: TavilyStub = {}) {
@@ -58,7 +63,12 @@ function stubTavily({
       const body = JSON.parse(String(init?.body));
       const query = `${body.query} ${body.include_domains.length > 0 ? "directories" : "web"}`;
       queries.push(query);
-      return (searchResponse ?? uniqueDomainResponse)(query, queries.length);
+      const callNumber = queries.length;
+      searchesRunning += 1;
+      mostSearchesRunning = Math.max(mostSearchesRunning, searchesRunning);
+      await new Promise((resolve) => setTimeout(resolve, searchDelayMs));
+      searchesRunning -= 1;
+      return (searchResponse ?? uniqueDomainResponse)(query, callNumber);
     }),
   );
   return queries;
@@ -73,6 +83,8 @@ async function runNewSearch(creditCap: number) {
 }
 
 beforeEach(async () => {
+  searchesRunning = 0;
+  mostSearchesRunning = 0;
   vi.stubEnv("DATABASE_URL", "postgresql://unused");
   vi.stubEnv("SEARCH_API_KEY", "tvly-test");
   testDb.current = await createTestDb();
@@ -235,6 +247,42 @@ describe("runSearch", () => {
     expect(search.companiesFound).toBe(1);
   });
 
+  it("runs up to 3 queries at once and spends exactly the credit cap", async () => {
+    const queries = stubTavily({ searchDelayMs: 10 });
+
+    const search = await runNewSearch(7);
+
+    expect(mostSearchesRunning).toBe(3);
+    expect(queries).toHaveLength(7);
+    expect(new Set(queries).size).toBe(7);
+    expect(search.creditsUsed).toBe(7);
+    expect(search.status).toBe("stopped_budget");
+
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
+    const rows = await db.select().from(searchQueries);
+    expect(rows.reduce((sum, row) => sum + row.creditsCharged, 0)).toBe(7);
+  });
+
+  it("spends exactly the monthly budget with parallel queries", async () => {
+    const queries = stubTavily({ creditsLeft: 4, searchDelayMs: 10 });
+
+    const search = await runNewSearch(100);
+
+    expect(queries).toHaveLength(4);
+    expect(search.creditsUsed).toBe(4);
+    expect(search.message).toContain("monthly Tavily credits");
+  });
+
+  it("does not check Tavily's usage when nothing can be spent", async () => {
+    const queries = stubTavily();
+    await runNewSearch(0);
+    const usageCalls = vi
+      .mocked(fetch)
+      .mock.calls.filter(([url]) => String(url).endsWith("/usage"));
+    expect(usageCalls).toHaveLength(0);
+    expect(queries).toHaveLength(0);
+  });
+
   it("reads websites in parallel, within the limit, one page at a time per site", async () => {
     let running = 0;
     let mostRunning = 0;
@@ -305,9 +353,10 @@ describe("runSearch", () => {
 
     const search = await runNewSearch(100);
 
-    expect(queries).toHaveLength(3);
     expect(search.status).toBe("stopped_budget");
-    expect(search.domainsFound).toBe(2);
+    expect(search.message).toContain("monthly Tavily credits");
+    expect(queries.length).toBeLessThanOrEqual(3 + 2);
+    expect(search.creditsUsed).toBe(queries.length);
   });
 
   it("stops early when queries keep finding the same domains", async () => {
@@ -318,33 +367,38 @@ describe("runSearch", () => {
 
     const search = await runNewSearch(100);
 
-    expect(queries.filter((query) => query.endsWith("web"))).toHaveLength(16);
-    expect(
-      queries.filter((query) => query.endsWith("directories")),
-    ).toHaveLength(2);
+    const webQueries = queries.filter((query) => query.endsWith("web"));
+    expect(webQueries.length).toBeGreaterThanOrEqual(16);
+    expect(webQueries.length).toBeLessThanOrEqual(16 + 2);
     expect(search.status).toBe("completed");
     expect(search.message).toContain("no new domains");
   });
 
   it("marks the search failed on an error and retries that query next run", async () => {
+    let shouldFail = true;
     const queries = stubTavily({
       searchResponse: (query, callNumber) =>
-        callNumber === 1
+        shouldFail && callNumber === 1
           ? new Response(null, { status: 500 })
           : uniqueDomainResponse(query),
     });
 
-    const failed = await runNewSearch(5);
+    const failed = await runNewSearch(50);
     expect(failed.status).toBe("failed");
     expect(failed.message).toBe("Tavily returned 500");
-    expect(failed.creditsUsed).toBe(1);
+    expect(failed.creditsUsed).toBe(queries.length);
+    expect(queries.length).toBeLessThanOrEqual(3);
 
-    const retried = await runNewSearch(1);
-    expect(queries[1]).toBe(queries[0]);
-    expect(retried.domainsFound).toBe(1);
+    shouldFail = false;
+    const failedQuery = queries[0];
+    const countAfterFailure = queries.length;
+    await runNewSearch(1);
+    expect(queries[countAfterFailure]).toBe(failedQuery);
 
     const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
     const rows = await db.select().from(searchQueries);
-    expect(rows[0].creditsCharged).toBe(2);
+    const charged = rows.filter((row) => row.creditsCharged === 2);
+    expect(charged).toHaveLength(1);
+    expect(charged[0].status).toBe("done");
   });
 });

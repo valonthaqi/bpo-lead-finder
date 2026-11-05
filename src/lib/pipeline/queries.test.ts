@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildQueries,
+  getBudgetStopReason,
   buildQueryKey,
   getCreditsRemaining,
-  getStopReason,
 } from "./queries";
 
 const filters = {
@@ -97,31 +97,22 @@ describe("getCreditsRemaining", () => {
   });
 });
 
-describe("getStopReason", () => {
-  const running = {
-    creditsUsed: 5,
-    creditCap: 100,
-    creditsRemaining: 500,
-    queriesWithoutNewDomains: 0,
-  };
+describe("getBudgetStopReason", () => {
+  const running = { creditsUsed: 5, creditCap: 100, creditsRemaining: 500 };
 
   it("keeps going while within every limit", () => {
-    expect(getStopReason(running)).toBeNull();
+    expect(getBudgetStopReason(running)).toBeNull();
   });
 
   it("stops at the per-search credit cap", () => {
-    expect(getStopReason({ ...running, creditsUsed: 100 })).toBe("credit_cap");
-  });
-
-  it("stops when the monthly credits are gone", () => {
-    expect(getStopReason({ ...running, creditsRemaining: 0 })).toBe(
-      "no_credits",
+    expect(getBudgetStopReason({ ...running, creditsUsed: 100 })).toBe(
+      "credit_cap",
     );
   });
 
-  it("stops when queries stop finding new domains", () => {
-    expect(getStopReason({ ...running, queriesWithoutNewDomains: 15 })).toBe(
-      "no_new_domains",
+  it("stops when the monthly credits are gone", () => {
+    expect(getBudgetStopReason({ ...running, creditsRemaining: 0 })).toBe(
+      "no_credits",
     );
   });
 });
