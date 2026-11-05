@@ -31,35 +31,22 @@ export function SettingsForm({
 
   return (
     <form onSubmit={handleSubmit} className="mt-3 space-y-3">
-      <label className="block text-sm font-medium">
-        Credit cap per search
-        <input
-          type="number"
-          min={0}
-          max={1000}
-          value={creditCap}
-          onChange={(event) => setCreditCap(event.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-2 font-normal"
-        />
-      </label>
-      <p className="text-xs text-slate-600">
-        Each new search query uses one credit, out of 1,000 free credits a
-        month. Stored queries are free.
-      </p>
-      <label className="block text-sm font-medium">
-        Websites to read at once
-        <input
-          type="number"
-          min={1}
-          max={20}
-          value={fetchConcurrency}
-          onChange={(event) => setFetchConcurrency(event.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-2 font-normal"
-        />
-      </label>
-      <p className="text-xs text-slate-600">
-        Higher is faster. Each website is still read one page at a time.
-      </p>
+      <NumberField
+        label="Credit cap per search"
+        help="Each new search query uses one credit, out of 1,000 free credits a month. Stored queries are free."
+        min={0}
+        max={1000}
+        value={creditCap}
+        onChange={setCreditCap}
+      />
+      <NumberField
+        label="Websites to read at once"
+        help="Higher is faster. Each website is still read one page at a time."
+        min={1}
+        max={20}
+        value={fetchConcurrency}
+        onChange={setFetchConcurrency}
+      />
       <button
         type="submit"
         className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
@@ -72,5 +59,38 @@ export function SettingsForm({
         </p>
       )}
     </form>
+  );
+}
+
+function NumberField({
+  label,
+  help,
+  min,
+  max,
+  value,
+  onChange,
+}: {
+  label: string;
+  help: string;
+  min: number;
+  max: number;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <label className="block text-sm font-medium">
+        {label}
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-2 font-normal"
+        />
+      </label>
+      <p className="text-xs text-slate-600">{help}</p>
+    </>
   );
 }
