@@ -4,21 +4,23 @@ export async function runWithLimit<T>(
   work: (item: T) => Promise<void>,
 ) {
   let nextIndex = 0;
-  let failure: { error: unknown } | null = null;
+  let hasFailed = false;
+  let firstError: unknown;
 
   async function runWorker() {
-    while (nextIndex < items.length && !failure) {
+    while (nextIndex < items.length && !hasFailed) {
       const item = items[nextIndex];
       nextIndex += 1;
       try {
         await work(item);
       } catch (error) {
-        failure ??= { error };
+        if (!hasFailed) firstError = error;
+        hasFailed = true;
       }
     }
   }
 
   const workerCount = Math.min(limit, items.length);
   await Promise.all(Array.from({ length: workerCount }, runWorker));
-  if (failure) throw (failure as { error: unknown }).error;
+  if (hasFailed) throw firstError;
 }
