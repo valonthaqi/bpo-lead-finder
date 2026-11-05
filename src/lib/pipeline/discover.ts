@@ -133,14 +133,11 @@ async function searchAndStore(apiKey: string, query: PlannedQuery) {
 }
 
 export async function discover(
-  searchId: number,
+  search: typeof searches.$inferSelect,
   onResultsChanged: (found: FoundResults) => Promise<void>,
 ): Promise<DiscoverResult> {
+  const searchId = search.id;
   const apiKey = readEnv().SEARCH_API_KEY;
-  const [search] = await db
-    .select()
-    .from(searches)
-    .where(eq(searches.id, searchId));
 
   const planned = buildQueries(filtersSchema.parse(search));
   await db

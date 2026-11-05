@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { companies, searches } from "../db/schema";
 import { filtersSchema, getFilterOptions, type Filters } from "../filters";
-import { getSettings } from "../searches";
+import { getSearch, getSettings } from "../searches";
 import { buildDraft, dedupeCompanies } from "./dedupe";
 import {
   discover,
@@ -117,10 +117,8 @@ async function saveRanking(
 
 export async function runSearch(searchId: number) {
   try {
-    const [search] = await db
-      .select()
-      .from(searches)
-      .where(eq(searches.id, searchId));
+    const search = await getSearch(searchId);
+    if (!search) throw new Error("Search not found");
     const filters = filtersSchema.parse(search);
     const { country } = getFilterOptions(filters);
 
@@ -141,7 +139,7 @@ export async function runSearch(searchId: number) {
       }
     }
 
-    const result = await discover(searchId, async (latest) => {
+    const result = await discover(search, async (latest) => {
       found = latest;
       await saveRankingIfDue();
     });
