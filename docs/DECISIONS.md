@@ -131,3 +131,9 @@ Using stored search results and no new credits:
 - **Companies are stored per search,** with their reasons and sources as columns. A separate sources table wasn't needed.
 - **Only role-based emails are kept,** like `info@` or `sales@`, because a name in an address could be a person's.
 - **Page text is stored, not HTML,** capped at 20 KB per page, at most 3 pages per domain, to stay well inside the free database size. The database is 13 MB so far.
+
+## 2026-11-05: Corrections after the third measurement
+
+- **Phone numbers.** US numbers on company sites were being read as the selected country, for example 888-766-4482 as a Pakistani number. That showed wrong details and gave US vendors points for being in the country. Numbers with no country prefix are now read as US when they are toll-free, or when the country's local numbers start with 0. Colombian mobiles stay Colombian.
+- **Disqualifiers for software vendors, lead sellers and listing sites.** These are checked against page titles. Tests include real call center titles that must not be flagged.
+- **Empty results aren't fully explained.** The earlier test retried three empty queries with a shorter exclude list and all three returned results, but it changed two things at once, the list and the retry. Empty results still appear with the short list. They do use a credit, because the 33 credits on the dashboard included 7 empty responses. The short list stays because it is simpler.
