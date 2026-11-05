@@ -30,3 +30,19 @@ A running log of choices and why they were made. Newest entries go at the bottom
 The original plan assumed Google Programmable Search's free quota. Google's documentation now says the Custom Search JSON API is closed to new customers, and existing customers have until January 1, 2027 to move off it.
 
 So `discover` will talk to a small provider interface, chosen by `SEARCH_PROVIDER` in the environment, rather than to one vendor. Which provider to use is still open.
+
+## 2026-11-05: Drizzle for database access
+
+Its schema is plain TypeScript and its queries read like SQL, with no separate engine or code generation step, so it's easier to explain line by line than Prisma.
+
+## 2026-11-05: Nothing that costs money
+
+No subscriptions, payments or cards on file. Every feature must work on a free version. This rules out any search provider that asks for a card, and a provider running out of free quota has to fail clearly rather than start charging.
+
+## 2026-11-05: No comments in code
+
+The code will be walked through live, so clear names and small functions carry the meaning. Reasons for choices live in this file instead.
+
+## 2026-11-05: Finish by November 8, November 9 at the latest
+
+The brief allows seven days, but November 9 is the last available working day. Features are cut before the deadline moves.
