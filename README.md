@@ -4,8 +4,6 @@ A prospecting tool for finding offshore BPO call centers that run US insurance c
 
 Pick a country, a language or market, and a campaign type. The app searches multiple public sources and returns a ranked list of matching call centers with their public business contact details, what they appear to work on, where each detail came from, and a fit score with the reasons behind it. Results can be exported as CSV.
 
-> Status: the search pipeline works from the terminal. The web interface is next.
-
 ## Run it locally
 
 Requires Node.js 22.12 or newer, a free Supabase project and a free Tavily API key.
@@ -14,7 +12,7 @@ Requires Node.js 22.12 or newer, a free Supabase project and a free Tavily API k
 npm install
 cp .env.example .env.local   # then fill in the values
 npm run check:env            # checks settings without spending search credits
-npm run db:migrate
+npm run db:migrate           # creates the database tables
 npm run dev
 ```
 
@@ -30,6 +28,12 @@ The search pipeline is in `src/lib/pipeline/`, with one file per step:
 4. **normalize:** standardize domains, phone numbers and names
 5. **dedupe:** merge records for the same business
 6. **score:** rate each business and record the reasons
+
+A search runs as a background job inside the server. The results page shows its progress, and one search runs at a time. If the server restarts during a search, that search is marked as interrupted, and "Run again" reuses stored results for free.
+
+## Search credits
+
+Tavily's free plan gives 1,000 credits a month. Each new query uses one. The same query never pays twice, the credit cap per search is in Settings, and a search stops with a clear message when a limit is reached.
 
 ## Data rules
 

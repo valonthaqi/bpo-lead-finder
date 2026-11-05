@@ -137,3 +137,19 @@ Using stored search results and no new credits:
 - **Phone numbers.** US numbers on company sites were being read as the selected country, for example 888-766-4482 as a Pakistani number. That showed wrong details and gave US vendors points for being in the country. Numbers with no country prefix are now read as US when they are toll-free, or when the country's local numbers start with 0. Colombian mobiles stay Colombian.
 - **Disqualifiers for software vendors, lead sellers and listing sites.** These are checked against page titles. Tests include real call center titles that must not be flagged.
 - **Empty results aren't fully explained.** The earlier test retried three empty queries with a shorter exclude list and all three returned results, but it changed two things at once, the list and the retry. Empty results still appear with the short list. They do use a credit, because the 33 credits on the dashboard included 7 empty responses. The short list stays because it is simpler.
+
+## 2026-11-05: Background job runs inside the server
+
+`POST /api/searches` saves a row and starts `runSearch` without waiting, and the results page polls for progress. This needs no queue service, but it needs a long-running server, so serverless hosting would need a small separate worker that calls `runSearch(id)`. One search runs at a time, which protects the credit budget. On startup, any search still marked as running is set to `interrupted`.
+
+## 2026-11-05: Results read directly on the server
+
+The results page reads companies from the database in a server component and paginates with `?page=`. Only the progress panel runs in the browser, so there is less client code to explain.
+
+## 2026-11-05: CSV cells are protected from formulas
+
+Company names and addresses come from public websites, so a cell starting with `=`, `+`, `-` or `@` gets a leading apostrophe to stop a spreadsheet running it. Phone numbers start with `+`, so they show the apostrophe too.
+
+## 2026-11-05: Types that work on a fresh clone
+
+Next's generated `PageProps` and `LayoutProps` only exist after a build, which made type checking fail on a fresh clone. Pages use explicit types instead.
