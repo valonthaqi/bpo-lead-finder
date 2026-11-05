@@ -141,113 +141,149 @@ export function buildMention(result: {
   };
 }
 
+function toReasons(
+  label: string,
+  points: number,
+  found: Evidence | null,
+): ScoreReason[] {
+  return found ? [{ label, points, ...found }] : [];
+}
+
+function scoreWebsiteRead(company: CompanyDraft) {
+  if (company.pages.length > 0) return [];
+  const label = company.isPreliminary
+    ? "Website not read yet, so only search snippets were used"
+    : "Website could not be read, so only search snippets were used";
+  return toReasons(label, 0, {
+    evidence: company.domains.join(", "),
+    url: company.results[0]?.url ?? "",
+  });
+}
+
+function scoreCampaign(company: CompanyDraft, filters: Filters) {
+  const campaign = CAMPAIGNS.find((item) => item.id === filters.campaignId);
+  const pattern = CAMPAIGN_PATTERNS[filters.campaignId];
+  const onSite = findOnSite(company, pattern);
+  if (onSite) {
+    return toReasons(
+      `Website mentions ${campaign?.name}`,
+      POINTS.campaignOnSite,
+      onSite,
+    );
+  }
+  return toReasons(
+    `Search result mentions ${campaign?.name}`,
+    POINTS.campaignInResults,
+    findInResults(company, pattern),
+  );
+}
+
+function scoreChecks(company: CompanyDraft) {
+  return CHECKS.flatMap((check) => {
+    const onSite = findOnSite(company, check.pattern);
+    if (onSite) return toReasons(check.label, check.points, onSite);
+    if (!check.pointsInResults) return [];
+    return toReasons(
+      `${check.label} (search result only)`,
+      check.pointsInResults,
+      findInResults(company, check.pattern),
+    );
+  });
+}
+
+function scoreCountry(company: CompanyDraft, filters: Filters) {
+  const onSite = toReasons(
+    "Website names the selected country or a city in it",
+    POINTS.countryOnSite,
+    findCountryOnSite(company, buildCountryPattern(filters)),
+  );
+  const countryPhone = findCountryPhone(company, filters);
+  if (!countryPhone) return onSite;
+  return [
+    ...onSite,
+    ...toReasons(
+      "Phone number is in the selected country",
+      POINTS.countryPhone,
+      { evidence: countryPhone, url: company.pages[0]?.url ?? "" },
+    ),
+  ];
+}
+
+function scoreMarket(company: CompanyDraft, filters: Filters) {
+  const market = MARKET_PATTERNS[filters.marketId];
+  return toReasons(
+    market.label,
+    market.points,
+    findOnSite(company, market.pattern),
+  );
+}
+
+function scoreMentions(companyMentions: Mention[]) {
+  if (companyMentions.length === 0) return [];
+  return toReasons(
+    `Named on ${companyMentions.length} other site(s)`,
+    Math.min(companyMentions.length * POINTS.perMention, POINTS.maxMentions),
+    {
+      evidence: companyMentions.map((mention) => mention.domain).join(", "),
+      url: companyMentions[0].url,
+    },
+  );
+}
+
+function scoreDisqualifiers(company: CompanyDraft) {
+  const titles = [
+    company.name,
+    ...company.pages.map((page) => page.title),
+  ].join(" ");
+  const url = company.pages[0]?.url ?? company.results[0]?.url ?? "";
+  return DISQUALIFIERS.flatMap((disqualifier) => {
+    const evidence = quote(titles, disqualifier.pattern);
+    return evidence
+      ? toReasons(disqualifier.label, disqualifier.points, { evidence, url })
+      : [];
+  });
+}
+
+function findCampaignsWorkedOn(company: CompanyDraft) {
+  return CAMPAIGNS.filter(
+    (item) =>
+      findOnSite(company, CAMPAIGN_PATTERNS[item.id]) ||
+      findInResults(company, CAMPAIGN_PATTERNS[item.id]),
+  ).map((item) => item.name);
+}
+
 export function scoreCompany(
   company: CompanyDraft,
   filters: Filters,
   mentions: Mention[],
 ): ScoredCompany {
-  const reasons: ScoreReason[] = [];
-  function add(label: string, points: number, found: Evidence | null) {
-    if (found) reasons.push({ label, points, ...found });
-  }
-
-  if (company.pages.length === 0) {
-    const url = company.results[0]?.url ?? "";
-    const label = company.isPreliminary
-      ? "Website not read yet, so only search snippets were used"
-      : "Website could not be read, so only search snippets were used";
-    add(label, 0, {
-      evidence: company.domains.join(", "),
-      url,
-    });
-  }
-
-  const campaign = CAMPAIGNS.find((item) => item.id === filters.campaignId);
-  const campaignPattern = CAMPAIGN_PATTERNS[filters.campaignId];
-  const campaignOnSite = findOnSite(company, campaignPattern);
-  add(
-    `Website mentions ${campaign?.name}`,
-    POINTS.campaignOnSite,
-    campaignOnSite,
-  );
-  if (!campaignOnSite) {
-    add(
-      `Search result mentions ${campaign?.name}`,
-      POINTS.campaignInResults,
-      findInResults(company, campaignPattern),
-    );
-  }
-
-  for (const check of CHECKS) {
-    const onSite = findOnSite(company, check.pattern);
-    add(check.label, check.points, onSite);
-    if (!onSite && check.pointsInResults) {
-      add(
-        `${check.label} (search result only)`,
-        check.pointsInResults,
-        findInResults(company, check.pattern),
-      );
-    }
-  }
-
-  add(
-    "Website names the selected country or a city in it",
-    POINTS.countryOnSite,
-    findCountryOnSite(company, buildCountryPattern(filters)),
-  );
-
-  const countryPhone = findCountryPhone(company, filters);
-  if (countryPhone) {
-    add("Phone number is in the selected country", POINTS.countryPhone, {
-      evidence: countryPhone,
-      url: company.pages[0]?.url ?? "",
-    });
-  }
-
-  const market = MARKET_PATTERNS[filters.marketId];
-  add(market.label, market.points, findOnSite(company, market.pattern));
-
   const companyMentions = findMentions(company, mentions);
-  const mentionPoints = Math.min(
-    companyMentions.length * POINTS.perMention,
-    POINTS.maxMentions,
-  );
-  if (companyMentions.length > 0) {
-    add(`Named on ${companyMentions.length} other site(s)`, mentionPoints, {
-      evidence: companyMentions.map((mention) => mention.domain).join(", "),
-      url: companyMentions[0].url,
-    });
-  }
-
-  const titles = [
-    company.name,
-    ...company.pages.map((page) => page.title),
-  ].join(" ");
-  for (const disqualifier of DISQUALIFIERS) {
-    const evidence = quote(titles, disqualifier.pattern);
-    if (evidence) {
-      add(disqualifier.label, disqualifier.points, {
-        evidence,
-        url: company.pages[0]?.url ?? company.results[0]?.url ?? "",
-      });
-    }
-  }
+  const reasons = [
+    ...scoreWebsiteRead(company),
+    ...scoreCampaign(company, filters),
+    ...scoreChecks(company),
+    ...scoreCountry(company, filters),
+    ...scoreMarket(company, filters),
+    ...scoreMentions(companyMentions),
+    ...scoreDisqualifiers(company),
+  ];
 
   const total = reasons.reduce((sum, reason) => sum + reason.points, 0);
   const score = Math.max(0, Math.min(100, total));
   const fitLabel =
     FIT_LABELS.find((fit) => score >= fit.minScore)?.label ?? "Low fit";
 
-  const campaigns = CAMPAIGNS.filter(
-    (item) =>
-      findOnSite(company, CAMPAIGN_PATTERNS[item.id]) ||
-      findInResults(company, CAMPAIGN_PATTERNS[item.id]),
-  ).map((item) => item.name);
-
   const sources = [
     ...company.results.map(({ source, url }) => ({ source, url })),
     ...companyMentions.map(({ url }) => ({ source: "mention", url })),
   ];
 
-  return { ...company, campaigns, score, fitLabel, reasons, sources };
+  return {
+    ...company,
+    campaigns: findCampaignsWorkedOn(company),
+    score,
+    fitLabel,
+    reasons,
+    sources,
+  };
 }
