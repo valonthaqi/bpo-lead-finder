@@ -19,43 +19,33 @@ export function buildQueryKey(source: string, country: string, text: string) {
 
 export function buildQueries(filters: Filters): PlannedQuery[] {
   const { country, market, campaign } = getFilterOptions(filters);
-
   const tavilyCountry = country.name.toLowerCase();
   const locations = [country.name, ...country.cities];
 
   const combinations: { rank: number; text: string }[] = [];
-  campaign.searchTerms.forEach((term, termIndex) => {
-    market.servicePhrases.forEach((phrase, phraseIndex) => {
-      locations.forEach((location, locationIndex) => {
+  for (const [termIndex, term] of campaign.searchTerms.entries()) {
+    for (const [phraseIndex, phrase] of market.servicePhrases.entries()) {
+      for (const [locationIndex, location] of locations.entries()) {
         combinations.push({
           rank: termIndex + phraseIndex + locationIndex,
           text: `${term} ${phrase} ${location}`,
         });
-      });
-    });
-  });
-  combinations.sort((a, b) => a.rank - b.rank);
-
-  const ranked: (PlannedQuery & { rank: number })[] = [];
-  for (const source of SOURCES.filter((item) => item.enabled)) {
-    for (const { rank, text } of combinations.slice(0, source.maxQueries)) {
-      ranked.push({
-        rank,
-        key: buildQueryKey(source.id, tavilyCountry, text),
-        source: source.id,
-        country: tavilyCountry,
-        text,
-      });
+      }
     }
   }
-  ranked.sort((a, b) => a.rank - b.rank);
+  combinations.sort((a, b) => a.rank - b.rank);
 
-  return ranked.map(({ key, source, country, text }) => ({
-    key,
-    source,
-    country,
-    text,
-  }));
+  const planned: { rank: number; query: PlannedQuery }[] = [];
+  for (const source of SOURCES.filter((item) => item.enabled)) {
+    for (const { rank, text } of combinations.slice(0, source.maxQueries)) {
+      const key = buildQueryKey(source.id, tavilyCountry, text);
+      const query = { key, source: source.id, country: tavilyCountry, text };
+      planned.push({ rank, query });
+    }
+  }
+  planned.sort((a, b) => a.rank - b.rank);
+
+  return planned.map(({ query }) => query);
 }
 
 export function getCreditsRemaining(credits: {
