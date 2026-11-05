@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { CAMPAIGNS, COUNTRIES, MARKETS } from "@/lib/filters";
 
 const FIELDS = [
@@ -10,7 +10,16 @@ const FIELDS = [
   { name: "campaignId", label: "Campaign", options: CAMPAIGNS },
 ];
 
+function subscribeToNothing() {
+  return () => {};
+}
+
 export function SearchForm() {
+  const isJavaScriptReady = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
@@ -56,7 +65,7 @@ export function SearchForm() {
       </div>
       <button
         type="submit"
-        disabled={isStarting}
+        disabled={!isJavaScriptReady || isStarting}
         className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
       >
         {isStarting ? "Starting..." : "Start search"}
