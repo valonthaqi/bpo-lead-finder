@@ -94,3 +94,12 @@ The rules that spend credits run against real Postgres in memory with a fake Tav
 - **Clearer query order.** ACA starts with "Obamacare", because the bare abbreviation pulled in unrelated results. Spanish searches start with Spanish phrases.
 - **Local credit tally.** Tavily's usage endpoint still showed 0 after 33 searches while its dashboard showed 33, so it lags. Remaining credits use the larger of Tavily's usage and the local count.
 - **Job board company names.** Postings name real companies, but extracting them is optional and depends on time.
+
+## 2026-11-05: Second yield measurement
+
+30 more credits, 63 in total, matching the local count. Reading titles by hand, Pakistan now has about 25 likely call centers among 126 candidates, and Colombia about 8 to 9 among 125. Findings:
+
+- 9 of 28 web queries came back empty, against 0 of 19 before. This coincided with the longer exclude list, but the cause isn't confirmed. Empty responses are currently stored as done, so they would never be retried.
+- Spanish-first queries did worse for Colombia: 15 credits added 1 or 2 likely call centers, because they surface consumer pages from insurers and news sites. The earlier 10 credits with English terms found about 7.
+- A fixed blocklist can't keep up with new job boards. Tested offline on stored results, requiring call-center words in the title, snippet or domain reduces candidates from 126 to 75 and from 125 to 29. It lost a few real companies, and let through some pages that merely mention a call center, so it can only be a first pass.
+- At this rate 100 credits would give about 40 to 70 likely call centers for Pakistan, and fewer for Colombia.
