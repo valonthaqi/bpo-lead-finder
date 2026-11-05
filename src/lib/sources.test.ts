@@ -34,8 +34,12 @@ describe("isCandidateDomain", () => {
 });
 
 describe("SEARCH_EXCLUDED_DOMAINS", () => {
-  it("fits within Tavily's limit of 150 domains", () => {
-    expect(SEARCH_EXCLUDED_DOMAINS.length).toBeLessThanOrEqual(150);
+  it("only excludes disabled sources, because long lists cause empty results", () => {
+    expect(SEARCH_EXCLUDED_DOMAINS).toEqual([
+      "linkedin.com",
+      "facebook.com",
+      "instagram.com",
+    ]);
   });
 
   it("keeps job boards searchable so their raw results are stored", () => {

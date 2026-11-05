@@ -93,7 +93,7 @@ const LISTING_DOMAINS = [
   "themanifest.com",
 ];
 
-export const NOISE_DOMAINS = [
+const NOISE_DOMAINS = [
   "abcnews.com",
   "dawn.com",
   "ebay.com",
@@ -131,10 +131,11 @@ const DIRECTORY_DOMAINS = SOURCES.filter((source) => source.enabled).flatMap(
   (source) => source.domains,
 );
 
-export const SEARCH_EXCLUDED_DOMAINS = [...DISABLED_DOMAINS, ...NOISE_DOMAINS];
+export const SEARCH_EXCLUDED_DOMAINS = DISABLED_DOMAINS;
 
 const NOT_CANDIDATE_DOMAINS = [
-  ...SEARCH_EXCLUDED_DOMAINS,
+  ...DISABLED_DOMAINS,
+  ...NOISE_DOMAINS,
   ...JOB_BOARD_DOMAINS,
   ...LISTING_DOMAINS,
   ...DIRECTORY_DOMAINS,
