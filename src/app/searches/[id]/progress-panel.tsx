@@ -1,10 +1,16 @@
 "use client";
 
+import { RotateCwIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
+  getProgressPercent,
   isActive,
-  STATUS_LABELS,
   type SearchProgress,
 } from "@/lib/search-status";
 
@@ -50,52 +56,57 @@ export function ProgressPanel({
     router.push(`/searches/${body.id}`);
   }
 
+  const percent = getProgressPercent(search);
+
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="font-medium">{STATUS_LABELS[search.status]}</p>
-        {!isRunning && (
-          <button
-            type="button"
-            onClick={runAgain}
-            className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
-          >
-            Run again
-          </button>
+    <Card>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <StatusBadge status={search.status} />
+          {!isRunning && (
+            <Button variant="outline" size="sm" onClick={runAgain}>
+              <RotateCwIcon aria-hidden="true" />
+              Run again
+            </Button>
+          )}
+        </div>
+        {isRunning &&
+          (percent === null ? (
+            <Skeleton className="h-2 w-full" />
+          ) : (
+            <Progress value={percent} className="h-2" />
+          ))}
+        {search.message && <p className="text-sm">{search.message}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
         )}
-      </div>
-      {search.message && (
-        <p className="mt-1 text-slate-700">{search.message}</p>
-      )}
-      {error && (
-        <p role="alert" className="mt-1 text-red-700">
-          {error}
-        </p>
-      )}
-      <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat
-          label="Queries"
-          value={`${search.queriesDone} of ${search.queriesPlanned}`}
-        />
-        <Stat
-          label="New credits"
-          value={`${search.creditsUsed} of ${search.creditCap}`}
-        />
-        <Stat
-          label="Websites read"
-          value={`${search.domainsFetched} of ${search.domainsToFetch}`}
-        />
-        <Stat label="Companies" value={String(search.companiesFound)} />
-      </dl>
-    </section>
+        <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+          <Stat
+            label="Queries"
+            value={`${search.queriesDone} of ${search.queriesPlanned}`}
+          />
+          <Stat
+            label="New credits"
+            value={`${search.creditsUsed} of ${search.creditCap}`}
+          />
+          <Stat
+            label="Websites read"
+            value={`${search.domainsFetched} of ${search.domainsToFetch}`}
+          />
+          <Stat label="Companies" value={String(search.companiesFound)} />
+        </dl>
+      </CardContent>
+    </Card>
   );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-slate-600">{label}</dt>
-      <dd className="font-semibold">{value}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-semibold tabular-nums">{value}</dd>
     </div>
   );
 }

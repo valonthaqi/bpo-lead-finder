@@ -1,10 +1,12 @@
+import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { describeFilters } from "@/lib/filters";
 import { isActive } from "@/lib/search-status";
 import { getCompaniesPage, getSearch } from "@/lib/searches";
-import { CompanyRow } from "./company-row";
+import { NoResults } from "./no-results";
 import { ProgressPanel } from "./progress-panel";
+import { ResultsTable } from "./results-table";
 
 function readPageNumber(value: string | string[] | undefined) {
   const page = Number(value);
@@ -24,12 +26,17 @@ export default async function SearchPage({
 
   const page = readPageNumber((await searchParams).page);
   const { rows, total, pageCount } = await getCompaniesPage(search.id, page);
+  const isRunning = isActive(search.status);
 
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/" className="text-sm text-slate-600 hover:underline">
-          ← New search
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline"
+        >
+          <ArrowLeftIcon className="size-4" aria-hidden="true" />
+          New search
         </Link>
         <h1 className="mt-1 text-xl font-semibold">
           {describeFilters(search)}
@@ -38,60 +45,17 @@ export default async function SearchPage({
 
       <ProgressPanel initialSearch={search} />
 
-      {total > 0 && (
-        <section>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-semibold">
-              {total} companies{isActive(search.status) ? " so far" : ""}, best
-              fit first
-            </h2>
-            <a
-              href={`/api/searches/${search.id}/export`}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
-            >
-              Export CSV
-            </a>
-          </div>
-
-          {rows.some((company) => company.isPreliminary) && (
-            <p className="mt-2 text-sm text-slate-600">
-              Preliminary rows are scored from search snippets only. Their
-              scores update as each website is read.
-            </p>
-          )}
-
-          <ul className="mt-3 space-y-3">
-            {rows.map((company) => (
-              <CompanyRow key={company.domains[0]} company={company} />
-            ))}
-          </ul>
-
-          <nav className="mt-4 flex items-center justify-between text-sm">
-            {page > 1 ? (
-              <Link
-                href={`/searches/${search.id}?page=${page - 1}`}
-                className="font-medium hover:underline"
-              >
-                ← Previous
-              </Link>
-            ) : (
-              <span />
-            )}
-            <span className="text-slate-600">
-              Page {page} of {pageCount}
-            </span>
-            {page < pageCount ? (
-              <Link
-                href={`/searches/${search.id}?page=${page + 1}`}
-                className="font-medium hover:underline"
-              >
-                Next →
-              </Link>
-            ) : (
-              <span />
-            )}
-          </nav>
-        </section>
+      {total > 0 ? (
+        <ResultsTable
+          searchId={search.id}
+          rows={rows}
+          total={total}
+          isRunning={isRunning}
+          page={page}
+          pageCount={pageCount}
+        />
+      ) : (
+        <NoResults isRunning={isRunning} />
       )}
     </div>
   );
