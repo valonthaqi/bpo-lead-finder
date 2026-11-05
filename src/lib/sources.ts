@@ -94,15 +94,10 @@ export const JOB_BOARD_DOMAINS = [
   "workana.com",
 ];
 
-const LISTING_DOMAINS = [
-  "designrush.com",
-  "techbehemoths.com",
-  "themanifest.com",
-];
-
 const NOISE_DOMAINS = [
   "abcnews.com",
   "dawn.com",
+  "designrush.com",
   "ebay.com",
   "insurance-forums.com",
   "journalstar.com",
@@ -117,6 +112,8 @@ const NOISE_DOMAINS = [
   "scribd.com",
   "semana.com",
   "studocu.com",
+  "techbehemoths.com",
+  "themanifest.com",
   "tiktok.com",
   "tribune.com.pk",
   "trustpilot.com",
@@ -142,7 +139,6 @@ const NOT_CANDIDATE_DOMAINS = [
   ...DISABLED_DOMAINS,
   ...NOISE_DOMAINS,
   ...JOB_BOARD_DOMAINS,
-  ...LISTING_DOMAINS,
   ...DIRECTORY_DOMAINS,
 ];
 
