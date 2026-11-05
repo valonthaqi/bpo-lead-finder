@@ -13,7 +13,7 @@ vi.mock("../db", () => ({
 }));
 
 const { runSearch } = await import("./index");
-const { createSearch } = await import("../searches");
+const { createSearch, saveSettings } = await import("../searches");
 
 const filters: Filters = {
   countryId: "pakistan",
@@ -233,6 +233,66 @@ describe("runSearch", () => {
     expect(search.domainsToFetch).toBe(2);
     expect(search.domainsFetched).toBe(2);
     expect(search.companiesFound).toBe(1);
+  });
+
+  it("reads websites in parallel, within the limit, one page at a time per site", async () => {
+    let running = 0;
+    let mostRunning = 0;
+    const runningByHost = new Map<string, number>();
+    let mostRunningOnOneHost = 0;
+    const domains = [
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+      "six",
+      "seven",
+      "eight",
+    ];
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.endsWith("/usage")) {
+          return Response.json({
+            account: { plan_usage: 0, plan_limit: 100 },
+          });
+        }
+        if (url.startsWith("https://api.tavily.com")) {
+          return Response.json({
+            results: domains.map((name) => ({
+              url: `https://${name}bpo.com/`,
+              title: `${name} BPO`,
+            })),
+          });
+        }
+        const host = new URL(url).hostname;
+        running += 1;
+        runningByHost.set(host, (runningByHost.get(host) ?? 0) + 1);
+        mostRunning = Math.max(mostRunning, running);
+        mostRunningOnOneHost = Math.max(
+          mostRunningOnOneHost,
+          runningByHost.get(host) ?? 0,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        running -= 1;
+        runningByHost.set(host, (runningByHost.get(host) ?? 0) - 1);
+        return new Response(
+          '<title>Home</title><a href="/contact">Contact</a>',
+          {
+            headers: { "content-type": "text/html" },
+          },
+        );
+      }),
+    );
+    await saveSettings({ perSearchCreditCap: 1, fetchConcurrency: 3 });
+
+    const search = await runNewSearch(1);
+
+    expect(search.domainsFetched).toBe(8);
+    expect(mostRunning).toBe(3);
+    expect(mostRunningOnOneHost).toBe(1);
   });
 
   it("stops cleanly when Tavily reports the plan limit", async () => {

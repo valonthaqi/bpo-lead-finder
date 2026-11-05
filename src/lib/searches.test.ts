@@ -16,11 +16,11 @@ const {
   COMPANIES_PER_PAGE,
   createSearch,
   getCompaniesPage,
-  getPerSearchCreditCap,
+  getSettings,
   getSearch,
   hasActiveSearch,
   markActiveSearchesInterrupted,
-  setPerSearchCreditCap,
+  saveSettings,
 } = await import("./searches");
 
 const filters: Filters = {
@@ -37,16 +37,22 @@ beforeEach(async () => {
   testDb.current = await createTestDb();
 });
 
-describe("credit cap setting", () => {
-  it("starts at the default and can be changed", async () => {
-    expect(await getPerSearchCreditCap()).toBe(100);
-    await setPerSearchCreditCap(40);
-    await setPerSearchCreditCap(25);
-    expect(await getPerSearchCreditCap()).toBe(25);
+describe("settings", () => {
+  it("start at the defaults and can be changed", async () => {
+    expect(await getSettings()).toEqual({
+      perSearchCreditCap: 100,
+      fetchConcurrency: 6,
+    });
+    await saveSettings({ perSearchCreditCap: 40, fetchConcurrency: 4 });
+    await saveSettings({ perSearchCreditCap: 25, fetchConcurrency: 8 });
+    expect(await getSettings()).toMatchObject({
+      perSearchCreditCap: 25,
+      fetchConcurrency: 8,
+    });
   });
 
   it("is copied onto new searches, unless a cap is given", async () => {
-    await setPerSearchCreditCap(25);
+    await saveSettings({ perSearchCreditCap: 25, fetchConcurrency: 6 });
     expect((await createSearch(filters)).creditCap).toBe(25);
     expect((await createSearch(filters, 3)).creditCap).toBe(3);
   });

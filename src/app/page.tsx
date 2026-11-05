@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { describeFilters } from "@/lib/filters";
 import { STATUS_LABELS } from "@/lib/search-status";
-import { getPerSearchCreditCap, listRecentSearches } from "@/lib/searches";
+import { getSettings, listRecentSearches } from "@/lib/searches";
 import { SearchForm } from "./search-form";
 import { SettingsForm } from "./settings-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [creditCap, recentSearches] = await Promise.all([
-    getPerSearchCreditCap(),
+  const [settings, recentSearches] = await Promise.all([
+    getSettings(),
     listRecentSearches(),
   ]);
 
@@ -55,7 +55,7 @@ export default async function Home() {
       <aside>
         <section className="rounded-lg border border-slate-200 bg-white p-6">
           <h2 className="font-semibold">Settings</h2>
-          <SettingsForm initialCreditCap={creditCap} />
+          <SettingsForm initialSettings={settings} />
         </section>
       </aside>
     </div>

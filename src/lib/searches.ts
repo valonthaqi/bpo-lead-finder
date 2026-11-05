@@ -1,11 +1,6 @@
 import { count, desc, eq, inArray } from "drizzle-orm";
 import { db } from "./db";
-import {
-  companies,
-  DEFAULT_PER_SEARCH_CREDIT_CAP,
-  searches,
-  settings,
-} from "./db/schema";
+import { companies, DEFAULT_SETTINGS, searches, settings } from "./db/schema";
 import type { Filters } from "./filters";
 import { ACTIVE_STATUSES } from "./search-status";
 
@@ -14,19 +9,21 @@ const RECENT_SEARCH_LIMIT = 10;
 
 export const COMPANIES_PER_PAGE = 50;
 
-export async function getPerSearchCreditCap() {
+export type Settings = typeof DEFAULT_SETTINGS;
+
+export async function getSettings(): Promise<Settings> {
   const [row] = await db
     .select()
     .from(settings)
     .where(eq(settings.id, SETTINGS_ROW_ID));
-  return row?.perSearchCreditCap ?? DEFAULT_PER_SEARCH_CREDIT_CAP;
+  return row ?? DEFAULT_SETTINGS;
 }
 
-export async function setPerSearchCreditCap(perSearchCreditCap: number) {
+export async function saveSettings(values: Settings) {
   await db
     .insert(settings)
-    .values({ id: SETTINGS_ROW_ID, perSearchCreditCap })
-    .onConflictDoUpdate({ target: settings.id, set: { perSearchCreditCap } });
+    .values({ id: SETTINGS_ROW_ID, ...values })
+    .onConflictDoUpdate({ target: settings.id, set: values });
 }
 
 export async function createSearch(filters: Filters, creditCap?: number) {
@@ -34,7 +31,7 @@ export async function createSearch(filters: Filters, creditCap?: number) {
     .insert(searches)
     .values({
       ...filters,
-      creditCap: creditCap ?? (await getPerSearchCreditCap()),
+      creditCap: creditCap ?? (await getSettings()).perSearchCreditCap,
     })
     .returning();
   return search;

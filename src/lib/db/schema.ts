@@ -9,11 +9,17 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
-export const DEFAULT_PER_SEARCH_CREDIT_CAP = 100;
+export const DEFAULT_SETTINGS = {
+  perSearchCreditCap: 100,
+  fetchConcurrency: 6,
+};
 
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey(),
   perSearchCreditCap: integer("per_search_credit_cap").notNull(),
+  fetchConcurrency: integer("fetch_concurrency")
+    .notNull()
+    .default(DEFAULT_SETTINGS.fetchConcurrency),
 }).enableRLS();
 
 export const searches = pgTable("searches", {

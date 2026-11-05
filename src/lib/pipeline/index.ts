@@ -2,14 +2,14 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { companies, searches } from "../db/schema";
 import { COUNTRIES, filtersSchema, type Filters } from "../filters";
+import { getSettings } from "../searches";
 import { buildDraft, dedupeCompanies } from "./dedupe";
 import { discover, type DiscoverResult } from "./discover";
 import { groupCandidatesToFetch } from "./evidence";
 import type { ExtractedPage } from "./extract";
 import { fetchCompanyPages } from "./fetch";
+import { runWithLimit } from "./run-with-limit";
 import { buildMention, scoreCompany, type ScoredCompany } from "./score";
-
-const FETCH_BATCH_SIZE = 5;
 
 export function describeOutcome(result: DiscoverResult, companyCount: number) {
   const found = `${companyCount} companies ranked from ${result.domainsFound} candidate domains, using ${result.creditsUsed} new credits.`;
@@ -39,18 +39,15 @@ async function fetchDomains(
   const country = COUNTRIES.find((item) => item.id === filters.countryId);
   if (!country) throw new Error("Unknown filter value");
 
+  const { fetchConcurrency } = await getSettings();
   const pagesByDomain = new Map<string, ExtractedPage[]>();
-  for (let start = 0; start < domains.length; start += FETCH_BATCH_SIZE) {
-    const batch = domains.slice(start, start + FETCH_BATCH_SIZE);
-    const pages = await Promise.all(
-      batch.map((domain) => fetchCompanyPages(domain, country.isoCode)),
-    );
-    batch.forEach((domain, index) => pagesByDomain.set(domain, pages[index]));
+  await runWithLimit(domains, fetchConcurrency, async (domain) => {
+    pagesByDomain.set(domain, await fetchCompanyPages(domain, country.isoCode));
     await db
       .update(searches)
       .set({ domainsFetched: pagesByDomain.size })
       .where(eq(searches.id, searchId));
-  }
+  });
   return pagesByDomain;
 }
 

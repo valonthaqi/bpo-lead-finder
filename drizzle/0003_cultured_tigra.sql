@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ADD COLUMN "fetch_concurrency" integer DEFAULT 6 NOT NULL;
