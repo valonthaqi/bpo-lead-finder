@@ -1,34 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BPO Lead Finder
 
-## Getting Started
+A prospecting tool for finding offshore BPO call centers that run US insurance campaigns (Medicare, ACA, final expense, life insurance).
 
-First, run the development server:
+Pick a country, a language or market, and a campaign type. The app searches multiple public sources and returns a ranked list of matching call centers with their public business contact details, what they appear to work on, where each detail came from, and a fit score with the reasons behind it. Results can be exported as CSV.
+
+> Status: early development. The project is set up; the search pipeline isn't built yet.
+
+## Run it locally
+
+Requires Node.js 20 or newer.
 
 ```bash
+npm install
+cp .env.example .env.local   # then fill in the values
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How it works
 
-## Learn More
+The search pipeline is in `src/lib/pipeline/`, with one file per step:
 
-To learn more about Next.js, take a look at the following resources:
+1. **discover:** turn filters into search queries and collect candidate URLs
+2. **fetch:** download pages politely and cache them
+3. **extract:** pull out company details and page text
+4. **normalize:** standardize domains, phone numbers and names
+5. **dedupe:** merge records for the same business
+6. **score:** rate each business and record the reasons
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data rules
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The app collects public, company-level business information only, with no personal employee profiles. LinkedIn, Facebook and Instagram are never scraped directly; their public company pages are reached only through search API results. Other sites are fetched with robots.txt respected, rate limits applied and an honest User-Agent.
 
-## Deploy on Vercel
+## Other commands
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build       # production build
+npm run lint        # ESLint
+npm run typecheck   # TypeScript
+npm run format      # Prettier
+```
