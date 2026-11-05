@@ -114,7 +114,10 @@ export function scoreCompany(
 
   if (company.pages.length === 0) {
     const url = company.results[0]?.url ?? "";
-    add("Website could not be read, so only search snippets were used", 0, {
+    const label = company.isPreliminary
+      ? "Website not read yet, so only search snippets were used"
+      : "Website could not be read, so only search snippets were used";
+    add(label, 0, {
       evidence: company.domains.join(", "),
       url,
     });

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { describeFilters } from "@/lib/filters";
+import { isActive } from "@/lib/search-status";
 import { getCompaniesPage, getSearch } from "@/lib/searches";
 import { CompanyRow } from "./company-row";
 import { ProgressPanel } from "./progress-panel";
@@ -59,7 +60,10 @@ export default async function SearchPage({
       {total > 0 && (
         <section>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-semibold">{total} companies, best fit first</h2>
+            <h2 className="font-semibold">
+              {total} companies{isActive(search.status) ? " so far" : ""}, best
+              fit first
+            </h2>
             <a
               href={`/api/searches/${search.id}/export`}
               className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
@@ -68,9 +72,16 @@ export default async function SearchPage({
             </a>
           </div>
 
+          {rows.some((company) => company.isPreliminary) && (
+            <p className="mt-2 text-sm text-slate-600">
+              Preliminary rows are scored from search snippets only. Their
+              scores update as each website is read.
+            </p>
+          )}
+
           <ul className="mt-3 space-y-3">
             {rows.map((company) => (
-              <CompanyRow key={company.id} company={company} />
+              <CompanyRow key={company.domains[0]} company={company} />
             ))}
           </ul>
 

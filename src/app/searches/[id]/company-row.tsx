@@ -49,6 +49,11 @@ export function CompanyRow({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {company.isPreliminary && (
+            <span className="rounded-full border border-slate-300 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+              Preliminary
+            </span>
+          )}
           <span
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${FIT_STYLES[company.fitLabel]}`}
           >

@@ -39,6 +39,7 @@ describe("companiesToCsv", () => {
         campaigns: ["Final expense"],
         score: 75,
         fitLabel: "Strong fit",
+        isPreliminary: false,
         reasons: [
           { label: "Website mentions X", points: 30, evidence: "x", url: "u" },
         ],
@@ -46,9 +47,9 @@ describe("companiesToCsv", () => {
       },
     ]);
     const [header, line] = csv.split("\n");
-    expect(header.startsWith("Score,Fit,Company")).toBe(true);
+    expect(header.startsWith("Score,Fit,Preliminary,Company")).toBe(true);
     expect(line).toBe(
-      "75,Strong fit,Zards BPO,zardsbpo.com; zards.pk,,info@zardsbpo.com,,,Final expense,30 Website mentions X,https://zardsbpo.com",
+      "75,Strong fit,No,Zards BPO,zardsbpo.com; zards.pk,,info@zardsbpo.com,,,Final expense,30 Website mentions X,https://zardsbpo.com",
     );
   });
 });

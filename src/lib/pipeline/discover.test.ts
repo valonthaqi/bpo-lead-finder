@@ -26,6 +26,7 @@ type TavilyStub = {
   searchDelayMs?: number;
   searchResponse?: (query: string, callNumber: number) => Response;
   sites?: Record<string, string>;
+  sitesReady?: Promise<void>;
 };
 
 let searchesRunning = 0;
@@ -43,12 +44,14 @@ function stubTavily({
   searchDelayMs = 0,
   searchResponse,
   sites = {},
+  sitesReady = Promise.resolve(),
 }: TavilyStub = {}) {
   const queries: string[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
       if (!url.startsWith("https://api.tavily.com")) {
+        await sitesReady;
         return sites[url]
           ? new Response(sites[url], {
               headers: { "content-type": "text/html" },
@@ -245,6 +248,56 @@ describe("runSearch", () => {
     expect(search.domainsToFetch).toBe(2);
     expect(search.domainsFetched).toBe(2);
     expect(search.companiesFound).toBe(1);
+  });
+
+  it("shows preliminary rows before websites are read, then updates them", async () => {
+    let openSites = () => {};
+    const sitesReady = new Promise<void>((resolve) => {
+      openSites = resolve;
+    });
+    stubTavily({
+      sitesReady,
+      searchResponse: () =>
+        Response.json({
+          results: [
+            {
+              url: "https://zardsbpo.com/",
+              title: "Zards BPO",
+              content: "Final expense call center",
+            },
+          ],
+        }),
+      sites: {
+        "https://zardsbpo.com/":
+          "<title>Zards BPO</title><p>Final expense BPO in Karachi for US agencies, licensed agents, outbound.</p>",
+      },
+    });
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
+    const { id } = await createSearch(filters, 1);
+
+    const running = runSearch(id);
+    await vi.waitFor(async () => {
+      const [row] = await db.select().from(searches).where(eq(searches.id, id));
+      expect(row.status).toBe("fetching");
+      expect(row.companiesFound).toBe(1);
+    });
+
+    const [preliminary] = await db.select().from(companies);
+    expect(preliminary.isPreliminary).toBe(true);
+    expect(preliminary.reasons.map((reason) => reason.label)).toContain(
+      "Website not read yet, so only search snippets were used",
+    );
+
+    openSites();
+    await running;
+
+    const rows = await db.select().from(companies);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].isPreliminary).toBe(false);
+    expect(rows[0].score).toBeGreaterThan(preliminary.score);
+    expect(rows[0].reasons.map((reason) => reason.label)).toContain(
+      "Website mentions Final expense",
+    );
   });
 
   it("runs up to 3 queries at once and spends exactly the credit cap", async () => {

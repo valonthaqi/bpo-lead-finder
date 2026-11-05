@@ -1,15 +1,17 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { companies, searches } from "../db/schema";
-import { COUNTRIES, filtersSchema, type Filters } from "../filters";
+import { COUNTRIES, filtersSchema } from "../filters";
 import { getSettings } from "../searches";
 import { buildDraft, dedupeCompanies } from "./dedupe";
-import { discover, type DiscoverResult } from "./discover";
+import { discover, type DiscoverResult, type FoundResults } from "./discover";
 import { groupCandidatesToFetch } from "./evidence";
 import type { ExtractedPage } from "./extract";
 import { fetchCompanyPages } from "./fetch";
 import { runWithLimit } from "./run-with-limit";
 import { buildMention, scoreCompany, type ScoredCompany } from "./score";
+
+const RANKING_SAVE_INTERVAL_MS = 3_000;
 
 export function describeOutcome(result: DiscoverResult, companyCount: number) {
   const found = `${companyCount} companies ranked from ${result.domainsFound} candidate domains, using ${result.creditsUsed} new credits.`;
@@ -31,26 +33,6 @@ function isBudgetStop(result: DiscoverResult) {
   );
 }
 
-async function fetchDomains(
-  searchId: number,
-  filters: Filters,
-  domains: string[],
-) {
-  const country = COUNTRIES.find((item) => item.id === filters.countryId);
-  if (!country) throw new Error("Unknown filter value");
-
-  const { fetchConcurrency } = await getSettings();
-  const pagesByDomain = new Map<string, ExtractedPage[]>();
-  await runWithLimit(domains, fetchConcurrency, async (domain) => {
-    pagesByDomain.set(domain, await fetchCompanyPages(domain, country.isoCode));
-    await db
-      .update(searches)
-      .set({ domainsFetched: pagesByDomain.size })
-      .where(eq(searches.id, searchId));
-  });
-  return pagesByDomain;
-}
-
 function toCompanyRow(searchId: number, company: ScoredCompany) {
   const sourcesByUrl = new Map(company.sources.map((link) => [link.url, link]));
   return {
@@ -64,53 +46,106 @@ function toCompanyRow(searchId: number, company: ScoredCompany) {
     campaigns: company.campaigns,
     score: company.score,
     fitLabel: company.fitLabel,
+    isPreliminary: company.isPreliminary,
     reasons: company.reasons,
     sources: [...sourcesByUrl.values()],
   };
 }
 
+function atMostEveryFewSeconds(action: () => Promise<void>) {
+  let lastRunAt = 0;
+  let isRunning = false;
+  return async () => {
+    if (isRunning || Date.now() - lastRunAt < RANKING_SAVE_INTERVAL_MS) return;
+    isRunning = true;
+    try {
+      await action();
+    } finally {
+      isRunning = false;
+      lastRunAt = Date.now();
+    }
+  };
+}
+
 export async function runSearch(searchId: number) {
   try {
-    const result = await discover(searchId);
     const [search] = await db
       .select()
       .from(searches)
       .where(eq(searches.id, searchId));
     const filters = filtersSchema.parse(search);
+    const country = COUNTRIES.find((item) => item.id === filters.countryId);
+    if (!country) throw new Error("Unknown filter value");
 
-    const groups = groupCandidatesToFetch(result.candidates);
+    let found: FoundResults = { candidates: [], allResults: [] };
+    const pagesByDomain = new Map<string, ExtractedPage[]>();
+
+    async function saveRanking() {
+      const groups = groupCandidatesToFetch(found.candidates);
+      const drafts = [...groups].map(([domain, results]) =>
+        buildDraft(domain, results, pagesByDomain.get(domain)),
+      );
+      const mentions = found.allResults.map(buildMention);
+      const ranking = dedupeCompanies(drafts).map((company) =>
+        scoreCompany(company, filters, mentions),
+      );
+
+      await db.transaction(async (tx) => {
+        await tx.delete(companies).where(eq(companies.searchId, searchId));
+        if (ranking.length > 0) {
+          await tx
+            .insert(companies)
+            .values(ranking.map((company) => toCompanyRow(searchId, company)));
+        }
+        await tx
+          .update(searches)
+          .set({
+            companiesFound: ranking.length,
+            domainsToFetch: groups.size,
+            domainsFetched: pagesByDomain.size,
+          })
+          .where(eq(searches.id, searchId));
+      });
+      return ranking.length;
+    }
+
+    const saveRankingSoon = atMostEveryFewSeconds(async () => {
+      await saveRanking();
+    });
+
+    const result = await discover(searchId, async (latest) => {
+      found = latest;
+      await saveRankingSoon();
+    });
+    found = result;
+
     await db
       .update(searches)
-      .set({ status: "fetching", domainsToFetch: groups.size })
+      .set({ status: "fetching" })
       .where(eq(searches.id, searchId));
-    const pagesByDomain = await fetchDomains(searchId, filters, [
-      ...groups.keys(),
-    ]);
+    await saveRanking();
+
+    const domains = [...groupCandidatesToFetch(found.candidates).keys()];
+    const { fetchConcurrency } = await getSettings();
+    await runWithLimit(domains, fetchConcurrency, async (domain) => {
+      pagesByDomain.set(
+        domain,
+        await fetchCompanyPages(domain, country.isoCode),
+      );
+      await saveRankingSoon();
+    });
 
     await db
       .update(searches)
       .set({ status: "scoring" })
       .where(eq(searches.id, searchId));
-    const drafts = [...groups].map(([domain, results]) =>
-      buildDraft(domain, results, pagesByDomain.get(domain) ?? []),
-    );
-    const mentions = result.allResults.map(buildMention);
-    const scored = dedupeCompanies(drafts).map((company) =>
-      scoreCompany(company, filters, mentions),
-    );
-
-    if (scored.length > 0) {
-      await db
-        .insert(companies)
-        .values(scored.map((company) => toCompanyRow(searchId, company)));
-    }
+    const companyCount = await saveRanking();
 
     await db
       .update(searches)
       .set({
         status: isBudgetStop(result) ? "stopped_budget" : "completed",
-        message: describeOutcome(result, scored.length),
-        companiesFound: scored.length,
+        message: describeOutcome(result, companyCount),
       })
       .where(eq(searches.id, searchId));
   } catch (error) {

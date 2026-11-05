@@ -9,6 +9,7 @@ function draft(overrides: Partial<CompanyDraft>): CompanyDraft {
     emails: [],
     address: null,
     socialLinks: [],
+    isPreliminary: false,
     pages: [],
     results: [],
     ...overrides,
@@ -16,6 +17,14 @@ function draft(overrides: Partial<CompanyDraft>): CompanyDraft {
 }
 
 describe("dedupeCompanies", () => {
+  it("stays preliminary until every merged website has been read", () => {
+    const [company] = dedupeCompanies([
+      draft({ name: "Zards BPO", domains: ["a.com"], isPreliminary: false }),
+      draft({ name: "Zards BPO", domains: ["b.com"], isPreliminary: true }),
+    ]);
+    expect(company.isPreliminary).toBe(true);
+  });
+
   it("keeps different companies apart", () => {
     const companies = dedupeCompanies([
       draft({ name: "Zards BPO", domains: ["zardsbpo.com"] }),

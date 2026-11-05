@@ -5,6 +5,7 @@ type CompanyRow = typeof companies.$inferSelect;
 const HEADER = [
   "Score",
   "Fit",
+  "Preliminary",
   "Company",
   "Websites",
   "Phones",
@@ -31,6 +32,7 @@ export function companiesToCsv(rows: CompanyRow[]) {
     [
       row.score,
       row.fitLabel,
+      row.isPreliminary ? "Yes" : "No",
       row.name,
       row.domains.join("; "),
       row.phones.join("; "),

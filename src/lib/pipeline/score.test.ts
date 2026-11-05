@@ -32,6 +32,7 @@ function company(overrides: Partial<CompanyDraft> = {}): CompanyDraft {
     emails: [],
     address: null,
     socialLinks: [],
+    isPreliminary: false,
     pages: [],
     results: [],
     ...overrides,
@@ -88,6 +89,30 @@ describe("scoreCompany", () => {
       "Website could not be read, so only search snippets were used",
     );
     expect(result.fitLabel).toBe("Low fit");
+  });
+
+  it("says the website hasn't been read yet on a preliminary row", () => {
+    const result = scoreCompany(
+      company({
+        isPreliminary: true,
+        results: [
+          {
+            url: "https://zardsbpo.com/x",
+            domain: "zardsbpo.com",
+            title: "Final expense closers",
+            snippet: "",
+            source: "web",
+          },
+        ],
+      }),
+      filters,
+      [],
+    );
+    expect(labels(result)).toContain(
+      "Website not read yet, so only search snippets were used",
+    );
+    expect(result.isPreliminary).toBe(true);
+    expect(result.score).toBe(15);
   });
 
   it("gives no campaign points for a different campaign", () => {

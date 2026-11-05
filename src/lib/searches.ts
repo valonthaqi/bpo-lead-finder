@@ -81,7 +81,7 @@ export async function getCompaniesPage(searchId: number, page: number) {
     .select()
     .from(companies)
     .where(eq(companies.searchId, searchId))
-    .orderBy(desc(companies.score), companies.id)
+    .orderBy(desc(companies.score), companies.name)
     .limit(COMPANIES_PER_PAGE)
     .offset((page - 1) * COMPANIES_PER_PAGE);
   return { rows, total, pageCount: Math.ceil(total / COMPANIES_PER_PAGE) };
@@ -92,5 +92,5 @@ export function getAllCompanies(searchId: number) {
     .select()
     .from(companies)
     .where(eq(companies.searchId, searchId))
-    .orderBy(desc(companies.score), companies.id);
+    .orderBy(desc(companies.score), companies.name);
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "companies" ADD COLUMN "is_preliminary" boolean DEFAULT false NOT NULL;

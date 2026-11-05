@@ -29,9 +29,12 @@ export type Candidate = {
   source: string;
 };
 
-export type DiscoverResult = {
+export type FoundResults = {
   candidates: Candidate[];
   allResults: Candidate[];
+};
+
+export type DiscoverResult = FoundResults & {
   stopReason: StopReason | null;
   creditsUsed: number;
   domainsFound: number;
@@ -45,7 +48,10 @@ function buildTavilyDomains(sourceId: string) {
   };
 }
 
-export async function discover(searchId: number): Promise<DiscoverResult> {
+export async function discover(
+  searchId: number,
+  onResultsChanged: (found: FoundResults) => Promise<void>,
+): Promise<DiscoverResult> {
   const apiKey = readEnv().SEARCH_API_KEY;
   const [search] = await db
     .select()
@@ -111,6 +117,7 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
     if (raw !== undefined) addResponse(query, raw);
   }
   await saveProgress();
+  await onResultsChanged({ candidates, allResults });
 
   const queriesToRun = planned.filter(
     (query) => !storedResponses.has(query.key),
@@ -173,6 +180,7 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
         : queriesWithoutNewDomains + 1;
     }
     await saveProgress();
+    await onResultsChanged({ candidates, allResults });
   });
 
   return {

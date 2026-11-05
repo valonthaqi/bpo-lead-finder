@@ -29,7 +29,7 @@ export function ProgressPanel({
       if (!response.ok) return;
       const latest: SearchProgress = await response.json();
       setSearch(latest);
-      if (!isActive(latest.status)) router.refresh();
+      router.refresh();
     }, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [isRunning, search.id, router]);

@@ -11,6 +11,7 @@ export type CompanyDraft = {
   emails: string[];
   address: string | null;
   socialLinks: string[];
+  isPreliminary: boolean;
   pages: ExtractedPage[];
   results: Candidate[];
 };
@@ -22,8 +23,9 @@ function unique<T>(items: T[]) {
 export function buildDraft(
   domain: string,
   results: Candidate[],
-  pages: ExtractedPage[],
+  fetchedPages: ExtractedPage[] | undefined,
 ): CompanyDraft {
+  const pages = fetchedPages ?? [];
   return {
     name: pages[0]?.companyName ?? domain.split(".")[0],
     domains: [domain],
@@ -31,6 +33,7 @@ export function buildDraft(
     emails: unique(pages.flatMap((page) => page.emails)),
     address: pages.find((page) => page.address)?.address ?? null,
     socialLinks: unique(pages.flatMap((page) => page.socialLinks)),
+    isPreliminary: fetchedPages === undefined,
     pages,
     results,
   };
@@ -51,6 +54,7 @@ function merge(a: CompanyDraft, b: CompanyDraft): CompanyDraft {
     emails: unique([...a.emails, ...b.emails]),
     address: a.address ?? b.address,
     socialLinks: unique([...a.socialLinks, ...b.socialLinks]),
+    isPreliminary: a.isPreliminary || b.isPreliminary,
     pages: [...a.pages, ...b.pages],
     results: [...a.results, ...b.results],
   };

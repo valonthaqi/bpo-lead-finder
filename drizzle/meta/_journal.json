@@ -29,6 +29,13 @@
       "when": 1793909230099,
       "tag": "0003_cultured_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793909586697,
+      "tag": "0004_thankful_blizzard",
+      "breakpoints": true
     }
   ]
 }

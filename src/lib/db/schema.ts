@@ -1,6 +1,7 @@
 import type { ExtractedPage } from "../pipeline/extract";
 import type { CompanySourceLink, ScoreReason } from "../pipeline/score";
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -81,6 +82,7 @@ export const companies = pgTable(
     campaigns: jsonb("campaigns").$type<string[]>().notNull(),
     score: integer("score").notNull(),
     fitLabel: text("fit_label").notNull(),
+    isPreliminary: boolean("is_preliminary").notNull().default(false),
     reasons: jsonb("reasons").$type<ScoreReason[]>().notNull(),
     sources: jsonb("sources").$type<CompanySourceLink[]>().notNull(),
   },
