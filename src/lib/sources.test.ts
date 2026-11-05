@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  JOB_BOARD_DOMAINS,
-  SEARCH_EXCLUDED_DOMAINS,
+  DISABLED_DOMAINS,
   isCandidateDomain,
+  JOB_BOARD_DOMAINS,
 } from "./sources";
 
 describe("isCandidateDomain", () => {
@@ -33,9 +33,9 @@ describe("isCandidateDomain", () => {
   });
 });
 
-describe("SEARCH_EXCLUDED_DOMAINS", () => {
+describe("DISABLED_DOMAINS", () => {
   it("only excludes disabled sources, because long lists cause empty results", () => {
-    expect(SEARCH_EXCLUDED_DOMAINS).toEqual([
+    expect(DISABLED_DOMAINS).toEqual([
       "linkedin.com",
       "facebook.com",
       "instagram.com",
@@ -44,7 +44,7 @@ describe("SEARCH_EXCLUDED_DOMAINS", () => {
 
   it("keeps job boards searchable so their raw results are stored", () => {
     for (const domain of JOB_BOARD_DOMAINS) {
-      expect(SEARCH_EXCLUDED_DOMAINS).not.toContain(domain);
+      expect(DISABLED_DOMAINS).not.toContain(domain);
     }
   });
 });

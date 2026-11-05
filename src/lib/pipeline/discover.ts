@@ -3,11 +3,7 @@ import { db } from "../db";
 import { searches, searchQueries } from "../db/schema";
 import { readEnv } from "../env";
 import { filtersSchema } from "../filters";
-import {
-  isCandidateDomain,
-  SEARCH_EXCLUDED_DOMAINS,
-  SOURCES,
-} from "../sources";
+import { DISABLED_DOMAINS, isCandidateDomain, SOURCES } from "../sources";
 import { reserveCredit } from "./credits";
 import { normalizeDomain } from "./normalize";
 import {
@@ -44,7 +40,7 @@ function buildTavilyDomains(sourceId: string) {
   const source = SOURCES.find((item) => item.id === sourceId);
   return {
     includeDomains: source?.domains ?? [],
-    excludeDomains: SEARCH_EXCLUDED_DOMAINS,
+    excludeDomains: DISABLED_DOMAINS,
   };
 }
 

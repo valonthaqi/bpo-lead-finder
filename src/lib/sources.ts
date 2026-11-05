@@ -130,15 +130,13 @@ const NOISE_DOMAINS = [
 
 const PUBLIC_INSTITUTION_DOMAIN = /\.(gov|edu|mil)(\.[a-z]{2})?$/;
 
-const DISABLED_DOMAINS = SOURCES.filter((source) => !source.enabled).flatMap(
-  (source) => source.domains,
-);
+export const DISABLED_DOMAINS = SOURCES.filter(
+  (source) => !source.enabled,
+).flatMap((source) => source.domains);
 
 const DIRECTORY_DOMAINS = SOURCES.filter((source) => source.enabled).flatMap(
   (source) => source.domains,
 );
-
-export const SEARCH_EXCLUDED_DOMAINS = DISABLED_DOMAINS;
 
 const NOT_CANDIDATE_DOMAINS = [
   ...DISABLED_DOMAINS,
