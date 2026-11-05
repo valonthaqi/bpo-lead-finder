@@ -62,21 +62,6 @@ function setStatus(searchId: number, status: string) {
   return db.update(searches).set({ status }).where(eq(searches.id, searchId));
 }
 
-function atMostEveryFewSeconds(action: () => Promise<void>) {
-  let lastRunAt = 0;
-  let isRunning = false;
-  return async () => {
-    if (isRunning || Date.now() - lastRunAt < RANKING_SAVE_INTERVAL_MS) return;
-    isRunning = true;
-    try {
-      await action();
-    } finally {
-      isRunning = false;
-      lastRunAt = Date.now();
-    }
-  };
-}
-
 function buildRanking(
   filters: Filters,
   found: FoundResults,
@@ -132,13 +117,24 @@ export async function runSearch(searchId: number) {
 
     let found: FoundResults = { candidates: [], allResults: [] };
     const pagesByDomain = new Map<string, ExtractedPage[]>();
-    const saveRankingSoon = atMostEveryFewSeconds(async () => {
-      await saveRanking(searchId, filters, found, pagesByDomain);
-    });
+    let lastSavedAt = 0;
+    let isSaving = false;
+
+    async function saveRankingIfDue() {
+      const isDue = Date.now() - lastSavedAt >= RANKING_SAVE_INTERVAL_MS;
+      if (isSaving || !isDue) return;
+      isSaving = true;
+      try {
+        await saveRanking(searchId, filters, found, pagesByDomain);
+      } finally {
+        isSaving = false;
+        lastSavedAt = Date.now();
+      }
+    }
 
     const result = await discover(searchId, async (latest) => {
       found = latest;
-      await saveRankingSoon();
+      await saveRankingIfDue();
     });
     found = result;
 
@@ -152,7 +148,7 @@ export async function runSearch(searchId: number) {
         domain,
         await fetchCompanyPages(domain, country.isoCode),
       );
-      await saveRankingSoon();
+      await saveRankingIfDue();
     });
 
     await setStatus(searchId, "scoring");
