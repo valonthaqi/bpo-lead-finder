@@ -157,3 +157,14 @@ Next's generated `PageProps` and `LayoutProps` only exist after a build, which m
 ## 2026-11-05: Stored search results no longer belong to a search
 
 `search_queries.search_id` was written but never read, and it stopped old searches from being deleted. Stored results are shared across searches through their query key, so the column was removed.
+
+## 2026-11-05: Making searches faster
+
+Measured on a 0-credit rerun with 50 stored queries and 89 websites. Before these changes, reading websites took about 174 seconds when uncached, and handling stored queries took about 10 seconds, one database round trip per query.
+
+- **A small `runWithLimit` helper instead of a library.** It's about 20 lines. Fixed batches made every batch wait for its slowest site, while a pool starts the next site as soon as any finishes. Each website is handled by one worker, one page at a time, so a site is never hit twice at once. The limit is in Settings, from 1 to 20.
+- **Stored queries are handled in one pass,** then saved once.
+- **Three Tavily queries at a time.** Each takes a credit through a short transaction: take a lock, check the search cap and the monthly budget, record the credit, release. The Tavily call happens only after that, so parallel calls can't overshoot. On real Postgres, 30 racing reservations against a cap of 5 granted exactly 5. Without the lock, the same race granted all 30.
+- **A parallel search can pass the early-stop point slightly.** Up to two queries already running still finish, and stay within the cap.
+- **Progressive results rebuild the whole ranking** from what's known so far and replace it in one transaction, at most every 3 seconds. Preliminary and final rows use the same dedupe and scoring code. This is simple, but rewrites every row each time, which would need revisiting for much larger result lists.
+- **Tavily's usage endpoint is skipped when nothing can be spent,** because it allows only 10 calls per 10 minutes.
