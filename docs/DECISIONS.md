@@ -190,3 +190,15 @@ Long functions were split into named steps, so each can be read on its own, and 
 Behaviour was checked after every commit by running the real pipeline with no credits across 3 stored searches and comparing all 266 companies with a baseline, including scores, reasons and evidence. Because those runs read cached pages, extraction was also compared old against new on 44 real pages, and 6 sites were read for real.
 
 Left as they are, because they're short and each has a clear reason: `useSyncExternalStore` on the search button, `globalThis` in `db/index.ts`, the advisory lock, `Intl.DisplayNames` for country names, and `cleanText`.
+
+## 2026-11-06: Interface redesign with shadcn/ui
+
+shadcn/ui copies its components into `src/components/ui`, so there is no hosted service and the code stays in the repo. Only the components in use were added.
+
+- **Native dropdowns for filters.** The form reads values with `FormData`, and native controls work well on phones.
+- **Dark mode follows the system setting,** in CSS only. A manual toggle would need more code and client state.
+- **A table with an expandable row replaced the cards.** Open rows keep their state during live refreshes because each row is keyed by its domain.
+- **On phones the fit moves under the company name,** and the detail columns move into the expandable panel, so nothing scrolls sideways.
+- **The progress bar shows websites read.** During the search stage the total depends on the credit cap and early stop, so it shows an animated placeholder instead of a misleading percentage.
+
+Only the interface changed. No pipeline, database, filter, CSV or route file was touched, and all 266 companies in the baseline comparison stayed identical.
