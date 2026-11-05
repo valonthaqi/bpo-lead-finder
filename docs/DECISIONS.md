@@ -46,3 +46,19 @@ The code will be walked through live, so clear names and small functions carry t
 ## 2026-11-05: Finish by November 8, November 9 at the latest
 
 The brief allows seven days, but November 9 is the last available working day. Features are cut before the deadline moves.
+
+## 2026-11-05: Postgres on Supabase replaces SQLite
+
+The company's preferred stack is Next.js and Postgres, and Supabase is fine with them. This replaces the earlier SQLite choice. Connections use the session pooler, because Supabase's direct connection is IPv6-only on the free plan and the transaction pooler is meant for short-lived serverless connections.
+
+## 2026-11-05: Background job for large searches
+
+The company expects 500 to 1000 results per search, which can't finish inside one request. A search becomes a row in a `searches` table with status and progress, a route starts it, and the UI polls. No paid queue service.
+
+## 2026-11-05: Social platforms left out for now
+
+The company hasn't answered whether reaching social platforms through a search API is acceptable. They're left out, and the source list stays easy to extend.
+
+## 2026-11-05: Search credits are a hard budget
+
+Tavily's free plan is 1,000 credits a month, with no card, no pagination and at most 20 results per query. So each search runs many query variations, every raw result is stored, the same query never runs twice, a per-search credit cap lives in settings, and a search stops with a clear message when the budget runs out.
