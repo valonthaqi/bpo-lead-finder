@@ -7,7 +7,6 @@ import { readEnv } from "../env";
 import { extractPage, type ExtractedPage } from "./extract";
 import { getRootDomain, normalizeDomain } from "./normalize";
 
-const MAX_PAGES_PER_DOMAIN = 3;
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_HTML_BYTES = 2_000_000;
 const MIN_DELAY_MS = 1_000;
@@ -65,6 +64,19 @@ async function savePage(
     .onConflictDoNothing();
 }
 
+async function readHomePage(domain: string, userAgent: string, delay: number) {
+  const url = `https://${domain}/`;
+  const html = await readHtml(url, domain, userAgent);
+  if (html !== null) return { url, html };
+
+  const wwwUrl = `https://www.${domain}/`;
+  await wait(delay);
+  const wwwHtml = await readHtml(wwwUrl, domain, userAgent);
+  return wwwHtml === null
+    ? { url, html: null }
+    : { url: wwwUrl, html: wwwHtml };
+}
+
 export async function fetchCompanyPages(
   domain: string,
   countryCode: CountryCode,
@@ -87,32 +99,29 @@ export async function fetchCompanyPages(
   const urls = [`https://${domain}/`];
 
   for (let index = 0; index < urls.length; index++) {
-    const url = urls[index];
     if (index > 0) await wait(delay);
 
-    if (robots.isAllowed(url, userAgent) === false) {
-      await savePage(url, domain, "blocked", null);
+    if (robots.isAllowed(urls[index], userAgent) === false) {
+      await savePage(urls[index], domain, "blocked", null);
       continue;
     }
 
-    let html = await readHtml(url, domain, userAgent);
-    let pageUrl = url;
-    if (html === null && index === 0) {
-      pageUrl = `https://www.${domain}/`;
-      await wait(delay);
-      html = await readHtml(pageUrl, domain, userAgent);
-    }
+    const { url, html } =
+      index === 0
+        ? await readHomePage(domain, userAgent, delay)
+        : {
+            url: urls[index],
+            html: await readHtml(urls[index], domain, userAgent),
+          };
     if (html === null) {
       await savePage(url, domain, "failed", null);
       continue;
     }
 
-    const page = extractPage(html, pageUrl, countryCode);
-    await savePage(pageUrl, domain, "ok", page);
+    const page = extractPage(html, url, countryCode);
+    await savePage(url, domain, "ok", page);
     pages.push(page);
-    if (index === 0) {
-      urls.push(...page.contactLinks.slice(0, MAX_PAGES_PER_DOMAIN - 1));
-    }
+    if (index === 0) urls.push(...page.contactLinks);
   }
 
   return pages;
