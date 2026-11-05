@@ -3,26 +3,31 @@ import { z } from "zod";
 export const COUNTRIES = [
   {
     id: "pakistan",
+    isoCode: "PK",
     name: "Pakistan",
     cities: ["Karachi", "Lahore", "Islamabad", "Faisalabad", "Multan"],
   },
   {
     id: "india",
+    isoCode: "IN",
     name: "India",
     cities: ["Noida", "Gurugram", "Mohali", "Mumbai", "Ahmedabad"],
   },
   {
     id: "philippines",
+    isoCode: "PH",
     name: "Philippines",
     cities: ["Manila", "Cebu", "Davao", "Quezon City", "Makati"],
   },
   {
     id: "colombia",
+    isoCode: "CO",
     name: "Colombia",
     cities: ["Bogotá", "Medellín", "Cali", "Barranquilla", "Bucaramanga"],
   },
   {
     id: "mexico",
+    isoCode: "MX",
     name: "Mexico",
     cities: [
       "Mexico City",
@@ -34,23 +39,46 @@ export const COUNTRIES = [
   },
   {
     id: "dominican-republic",
+    isoCode: "DO",
     name: "Dominican Republic",
     cities: ["Santo Domingo", "Santiago"],
   },
   {
     id: "south-africa",
+    isoCode: "ZA",
     name: "South Africa",
     cities: ["Cape Town", "Johannesburg", "Durban"],
   },
-  { id: "jamaica", name: "Jamaica", cities: ["Kingston", "Montego Bay"] },
-  { id: "guatemala", name: "Guatemala", cities: ["Guatemala City"] },
-  { id: "el-salvador", name: "El Salvador", cities: ["San Salvador"] },
+  {
+    id: "jamaica",
+    isoCode: "JM",
+    name: "Jamaica",
+    cities: ["Kingston", "Montego Bay"],
+  },
+  {
+    id: "guatemala",
+    isoCode: "GT",
+    name: "Guatemala",
+    cities: ["Guatemala City"],
+  },
+  {
+    id: "el-salvador",
+    isoCode: "SV",
+    name: "El Salvador",
+    cities: ["San Salvador"],
+  },
   {
     id: "honduras",
+    isoCode: "HN",
     name: "Honduras",
     cities: ["Tegucigalpa", "San Pedro Sula"],
   },
-  { id: "bangladesh", name: "Bangladesh", cities: ["Dhaka", "Chittagong"] },
+  {
+    id: "bangladesh",
+    isoCode: "BD",
+    name: "Bangladesh",
+    cities: ["Dhaka", "Chittagong"],
+  },
 ] as const;
 
 export const MARKETS = [
