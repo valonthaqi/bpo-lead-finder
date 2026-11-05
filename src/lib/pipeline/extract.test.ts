@@ -43,6 +43,15 @@ describe("extractPage", () => {
     expect(named.companyName).toBe("Zards Group");
   });
 
+  it("ignores a site name that is really a URL", () => {
+    const named = extractPage(
+      '<meta property="og:site_name" content="https://www.zardsbpo.com"><title>Welcome</title>',
+      "https://zardsbpo.com/",
+      "PK",
+    );
+    expect(named.companyName).toBe("zardsbpo");
+  });
+
   it("falls back to the domain when the title doesn't help", () => {
     const untitled = extractPage(
       "<title>Welcome home</title>",

@@ -50,7 +50,7 @@ function extractCompanyName(
   title: string,
   rootDomain: string,
 ) {
-  if (siteName) return siteName.trim();
+  if (siteName && !siteName.startsWith("http")) return siteName.trim();
   const domainLabel = rootDomain.split(".")[0];
   const matchingPart = title
     .split(TITLE_SEPARATOR)
