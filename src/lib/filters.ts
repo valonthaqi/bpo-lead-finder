@@ -163,3 +163,14 @@ export const filtersSchema = z.object({
 });
 
 export type Filters = z.infer<typeof filtersSchema>;
+
+export function describeFilters(filters: {
+  countryId: string;
+  marketId: string;
+  campaignId: string;
+}) {
+  const country = COUNTRIES.find((item) => item.id === filters.countryId);
+  const market = MARKETS.find((item) => item.id === filters.marketId);
+  const campaign = CAMPAIGNS.find((item) => item.id === filters.campaignId);
+  return [country?.name, market?.name, campaign?.name].join(", ");
+}
