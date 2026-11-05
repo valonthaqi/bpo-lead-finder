@@ -1,5 +1,5 @@
 import { filtersSchema } from "@/lib/filters";
-import { runSearch } from "@/lib/pipeline";
+import { runSearch } from "@/lib/pipeline/run-search";
 import { createSearch, hasActiveSearch } from "@/lib/searches";
 
 export async function POST(request: Request) {

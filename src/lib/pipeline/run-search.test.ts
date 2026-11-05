@@ -12,7 +12,7 @@ vi.mock("../db", () => ({
   },
 }));
 
-const { describeError, runSearch } = await import("./index");
+const { describeError, runSearch } = await import("./run-search");
 const { createSearch, saveSettings } = await import("../searches");
 
 const filters: Filters = {

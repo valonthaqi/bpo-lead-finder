@@ -10,7 +10,7 @@ vi.mock("@/lib/db", () => ({
     return testDb.current;
   },
 }));
-vi.mock("@/lib/pipeline", () => ({ runSearch }));
+vi.mock("@/lib/pipeline/run-search", () => ({ runSearch }));
 
 const { POST } = await import("./route");
 

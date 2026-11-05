@@ -3,7 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { closeDb, db } from "../src/lib/db";
 import { companies, searches } from "../src/lib/db/schema";
 import { filtersSchema } from "../src/lib/filters";
-import { runSearch } from "../src/lib/pipeline";
+import { runSearch } from "../src/lib/pipeline/run-search";
 import { createSearch } from "../src/lib/searches";
 
 const RESULTS_TO_PRINT = 25;
