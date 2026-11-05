@@ -182,3 +182,11 @@ Any site with a phone country dropdown or country picker was earning "names the 
 ## 2026-11-05: Search button disabled until the page is ready
 
 Clicking before the page's JavaScript runs used to reload the page with the filters in the URL and start nothing. The button is now sent disabled from the server and enabled once JavaScript takes over. `useSyncExternalStore` is used because it takes a separate server value, without setting state in an effect.
+
+## 2026-11-05: Simplified for reading, with no change in behaviour
+
+Long functions were split into named steps, so each can be read on its own, and duplicate lookups, an alias, an unused field and a function-returning-a-function were removed. The terminal search script was deleted because the app does the same job.
+
+Behaviour was checked after every commit by running the real pipeline with no credits across 3 stored searches and comparing all 266 companies with a baseline, including scores, reasons and evidence. Because those runs read cached pages, extraction was also compared old against new on 44 real pages, and 6 sites were read for real.
+
+Left as they are, because they're short and each has a clear reason: `useSyncExternalStore` on the search button, `globalThis` in `db/index.ts`, the advisory lock, `Intl.DisplayNames` for country names, and `cleanText`.
