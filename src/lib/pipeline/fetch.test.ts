@@ -109,6 +109,42 @@ describe("fetchCompanyPages", () => {
     expect(requested).toHaveLength(countAfterDead);
   });
 
+  it("returns stored pages in the order they were read, home page first", async () => {
+    stubSite({});
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
+    const page = (url: string, title: string) => ({
+      url,
+      title,
+      companyName: title,
+      text: "",
+      phones: [],
+      emails: [],
+      address: null,
+      socialLinks: [],
+      contactLinks: [],
+    });
+    await db.insert(fetchedPages).values([
+      {
+        url: "https://zards.com/about",
+        domain: "zards.com",
+        status: "ok",
+        extracted: page("https://zards.com/about", "About"),
+        fetchedAt: new Date("2026-01-01T00:00:02Z"),
+      },
+      {
+        url: "https://zards.com/",
+        domain: "zards.com",
+        status: "ok",
+        extracted: page("https://zards.com/", "Home"),
+        fetchedAt: new Date("2026-01-01T00:00:01Z"),
+      },
+    ]);
+
+    const pages = await fetchCompanyPages("zards.com", "PK");
+
+    expect(pages.map((item) => item.title)).toEqual(["Home", "About"]);
+  });
+
   it("tries the www address when the bare domain fails", async () => {
     stubSite({
       "https://www.zards.com/": () => htmlResponse("<title>Zards BPO</title>"),

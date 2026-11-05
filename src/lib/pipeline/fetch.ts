@@ -72,7 +72,8 @@ export async function fetchCompanyPages(
   const stored = await db
     .select()
     .from(fetchedPages)
-    .where(eq(fetchedPages.domain, domain));
+    .where(eq(fetchedPages.domain, domain))
+    .orderBy(fetchedPages.fetchedAt);
   if (stored.length > 0) {
     return stored.flatMap((row) => (row.extracted ? [row.extracted] : []));
   }
