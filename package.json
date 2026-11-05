@@ -14,8 +14,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "check:env": "tsx --env-file-if-exists=.env.local scripts/check-env.ts",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
-    "search": "tsx --env-file-if-exists=.env.local scripts/search.ts"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "cheerio": "1.2.0",

@@ -10,7 +10,3 @@ const client =
 globalForDb.dbClient = client;
 
 export const db = drizzle(client);
-
-export function closeDb() {
-  return client.end();
-}

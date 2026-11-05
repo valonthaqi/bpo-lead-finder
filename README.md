@@ -48,5 +48,4 @@ npm run typecheck   # TypeScript
 npm run format      # Prettier
 npm test            # unit tests
 npm run check       # all checks and the build, stops at the first failure
-npm run search -- --country pakistan --campaign final-expense --cap 0   # terminal search, --cap sets the credits it may spend
 ```
