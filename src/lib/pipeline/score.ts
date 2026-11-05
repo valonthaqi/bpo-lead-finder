@@ -59,6 +59,14 @@ function looksLikeCountryList(text: string) {
   );
 }
 
+function isUsStateNewMexico(text: string, match: RegExpExecArray) {
+  const textBefore = text.slice(Math.max(0, match.index - 4), match.index);
+  return (
+    match[0].toLowerCase() === "mexico" &&
+    (textBefore === "New " || textBefore === "NEW ")
+  );
+}
+
 function findCountryOnSite(
   company: CompanyDraft,
   pattern: RegExp,
@@ -66,6 +74,7 @@ function findCountryOnSite(
   for (const page of company.pages) {
     const text = `${page.title} ${page.text}`;
     for (const match of text.matchAll(pattern)) {
+      if (isUsStateNewMexico(text, match)) continue;
       const evidence = getSurroundingText(text, match.index, match[0].length);
       if (!looksLikeCountryList(evidence)) return { evidence, url: page.url };
     }

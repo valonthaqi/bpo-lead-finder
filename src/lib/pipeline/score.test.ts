@@ -211,6 +211,28 @@ describe("scoreCompany", () => {
       expect(reason?.evidence).toContain("Tijuana");
     });
 
+    it("doesn't count the US state of New Mexico", () => {
+      expect(hasCountryReason("Events in New Mexico and Nevada", mexico)).toBe(
+        false,
+      );
+      expect(hasCountryReason("ALBUQUERQUE, NEW MEXICO", mexico)).toBe(false);
+    });
+
+    it("still counts a new office in Mexico", () => {
+      expect(hasCountryReason("Our new Mexico office is open", mexico)).toBe(
+        true,
+      );
+    });
+
+    it("finds the real country after a mention of New Mexico", () => {
+      expect(
+        hasCountryReason(
+          "Based in New Mexico. Our floor is in Tijuana.",
+          mexico,
+        ),
+      ).toBe(true);
+    });
+
     it("gives the same result on repeat calls", () => {
       expect(hasCountryReason("Based in Lahore.")).toBe(true);
       expect(hasCountryReason("Based in Lahore.")).toBe(true);
