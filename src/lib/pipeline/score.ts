@@ -1,7 +1,7 @@
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { CAMPAIGNS, COUNTRIES, type Filters } from "../filters";
 import type { CompanyDraft } from "./dedupe";
-import { normalizeCompanyName } from "./normalize";
+import { cleanText, normalizeCompanyName } from "./normalize";
 import {
   CAMPAIGN_PATTERNS,
   CHECKS,
@@ -40,7 +40,7 @@ function quote(text: string, pattern: RegExp) {
   if (!match) return null;
   const start = Math.max(0, match.index - EVIDENCE_RADIUS);
   const end = match.index + match[0].length + EVIDENCE_RADIUS;
-  return text.slice(start, end).trim();
+  return cleanText(text.slice(start, end)).trim();
 }
 
 function findOnSite(company: CompanyDraft, pattern: RegExp): Evidence | null {

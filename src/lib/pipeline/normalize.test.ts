@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cleanText,
   getNameSimilarity,
   getRootDomain,
   normalizeCompanyName,
@@ -40,6 +41,24 @@ describe("getRootDomain", () => {
 
   it("leaves a single-part country suffix alone", () => {
     expect(getRootDomain("roboconnect.pk")).toBe("roboconnect.pk");
+  });
+});
+
+describe("cleanText", () => {
+  it("removes half an emoji left at either end of a cut", () => {
+    const emoji = "🇲🇽";
+    const cut = `${emoji.slice(1)} text ${emoji.slice(0, 1)}`;
+    expect(cut.isWellFormed()).toBe(false);
+    expect(cleanText(cut)).toBe(`${emoji.slice(2)} text `);
+    expect(cleanText(cut).isWellFormed()).toBe(true);
+  });
+
+  it("keeps whole emoji and accents", () => {
+    expect(cleanText("Bogotá 🇨🇴")).toBe("Bogotá 🇨🇴");
+  });
+
+  it("removes null characters, which Postgres can't store", () => {
+    expect(cleanText("a\u0000b")).toBe("ab");
   });
 });
 

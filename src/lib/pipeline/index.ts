@@ -13,6 +13,12 @@ import { buildMention, scoreCompany, type ScoredCompany } from "./score";
 
 const RANKING_SAVE_INTERVAL_MS = 3_000;
 
+export function describeError(error: unknown) {
+  let deepest = error;
+  while (deepest instanceof Error && deepest.cause) deepest = deepest.cause;
+  return deepest instanceof Error ? deepest.message : "Unknown error";
+}
+
 export function describeOutcome(result: DiscoverResult, companyCount: number) {
   const found = `${companyCount} companies ranked from ${result.domainsFound} candidate domains, using ${result.creditsUsed} new credits.`;
   switch (result.stopReason) {
@@ -149,10 +155,10 @@ export async function runSearch(searchId: number) {
       })
       .where(eq(searches.id, searchId));
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error(error);
     await db
       .update(searches)
-      .set({ status: "failed", message })
+      .set({ status: "failed", message: describeError(error) })
       .where(eq(searches.id, searchId));
   }
 }

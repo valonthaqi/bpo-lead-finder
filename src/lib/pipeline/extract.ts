@@ -1,6 +1,11 @@
 import * as cheerio from "cheerio";
 import { findPhoneNumbersInText, type CountryCode } from "libphonenumber-js";
-import { getRootDomain, normalizeDomain, normalizePhone } from "./normalize";
+import {
+  cleanText,
+  getRootDomain,
+  normalizeDomain,
+  normalizePhone,
+} from "./normalize";
 
 const MAX_TEXT_LENGTH = 20_000;
 const MAX_PHONES = 5;
@@ -50,7 +55,9 @@ function extractCompanyName(
   title: string,
   rootDomain: string,
 ) {
-  if (siteName && !siteName.startsWith("http")) return siteName.trim();
+  if (siteName && !siteName.startsWith("http")) {
+    return cleanText(siteName).trim();
+  }
   const domainLabel = rootDomain.split(".")[0];
   const matchingPart = title
     .split(TITLE_SEPARATOR)
@@ -92,7 +99,7 @@ export function extractPage(
   const $ = cheerio.load(html);
   const rootDomain = getRootDomain(normalizeDomain(url) ?? "");
 
-  const title = $("title").first().text().trim();
+  const title = cleanText($("title").first().text()).trim();
   const siteName = $('meta[property="og:site_name"]').attr("content");
   const hrefs = $("a[href]")
     .map((_, link) => ({
@@ -136,10 +143,12 @@ export function extractPage(
     url,
     title,
     companyName: extractCompanyName(siteName, title, rootDomain),
-    text: text.slice(0, MAX_TEXT_LENGTH),
+    text: cleanText(text.slice(0, MAX_TEXT_LENGTH)),
     phones: extractPhones(telLinks, text, countryCode),
     emails: extractEmails(mailtoLinks, text),
-    address: $("address").first().text().replace(/\s+/g, " ").trim() || null,
+    address:
+      cleanText($("address").first().text()).replace(/\s+/g, " ").trim() ||
+      null,
     socialLinks: [...new Set(socialLinks)],
     contactLinks: [...new Set(contactLinks)].slice(0, MAX_CONTACT_LINKS),
   };

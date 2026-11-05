@@ -106,6 +106,17 @@ describe("extractPage", () => {
     ]);
   });
 
+  it("never cuts the stored text through the middle of an emoji", () => {
+    const longText = `a${"🇲🇽".repeat(6000)}`;
+    const cut = extractPage(
+      `<title>Home</title><p>${longText}</p>`,
+      "https://a.com/",
+      "PK",
+    );
+    expect(cut.text.isWellFormed()).toBe(true);
+    expect(cut.text.length).toBeLessThanOrEqual(20_000);
+  });
+
   it("handles a page with nothing in it", () => {
     const empty = extractPage("", "https://a.com/", "PK");
     expect(empty.phones).toEqual([]);

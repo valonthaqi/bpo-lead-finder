@@ -12,7 +12,7 @@ vi.mock("../db", () => ({
   },
 }));
 
-const { runSearch } = await import("./index");
+const { describeError, runSearch } = await import("./index");
 const { createSearch, saveSettings } = await import("../searches");
 
 const filters: Filters = {
@@ -250,6 +250,54 @@ describe("runSearch", () => {
     expect(search.companiesFound).toBe(1);
   });
 
+  it("saves a company whose evidence is cut through the middle of an emoji", async () => {
+    const flags = "🇲🇽".repeat(40);
+    stubTavily({
+      searchResponse: () =>
+        Response.json({
+          results: [
+            {
+              url: "https://flagbpo.com/",
+              title: "Flag BPO",
+              content: `${flags} final expense`,
+            },
+          ],
+        }),
+      sites: {
+        "https://flagbpo.com/": `<title>Flag BPO</title><p>${flags} final expense call center</p>`,
+      },
+    });
+
+    const search = await runNewSearch(1);
+
+    expect(search.message).toContain("1 companies ranked");
+    expect(search.status).toBe("stopped_budget");
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
+    const [company] = await db.select().from(companies);
+    for (const reason of company.reasons) {
+      expect(reason.evidence.isWellFormed()).toBe(true);
+    }
+  });
+
+  it("saves a search result containing a null character", async () => {
+    stubTavily({
+      searchResponse: () =>
+        Response.json({
+          results: [
+            {
+              url: "https://nullbpo.com/",
+              title: "Null BPO",
+              content: "final \u0000expense call center",
+            },
+          ],
+        }),
+    });
+
+    const search = await runNewSearch(1);
+
+    expect(search.status).toBe("stopped_budget");
+  });
+
   it("shows preliminary rows before websites are read, then updates them", async () => {
     let openSites = () => {};
     const sitesReady = new Promise<void>((resolve) => {
@@ -453,5 +501,20 @@ describe("runSearch", () => {
     const charged = rows.filter((row) => row.creditsCharged === 2);
     expect(charged).toHaveLength(1);
     expect(charged[0].status).toBe("done");
+  });
+});
+
+describe("describeError", () => {
+  it("reports the underlying database error, not the query text", () => {
+    const error = new Error("Failed query: insert into companies ...", {
+      cause: new Error("invalid input syntax for type json"),
+    });
+    expect(describeError(error)).toBe("invalid input syntax for type json");
+  });
+
+  it("reports a plain error as it is", () => {
+    expect(describeError(new Error("Tavily returned 500"))).toBe(
+      "Tavily returned 500",
+    );
   });
 });

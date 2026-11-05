@@ -34,6 +34,18 @@ describe("searchTavily", () => {
     expect(sent.include_answer).toBeUndefined();
   });
 
+  it("removes characters Postgres can't store from the response", async () => {
+    stubFetch(
+      Response.json({
+        results: [{ url: "https://a.com", content: "final \u0000expense" }],
+      }),
+    );
+    expect(await searchTavily("key", request)).toEqual({
+      kind: "ok",
+      raw: { results: [{ url: "https://a.com", content: "final expense" }] },
+    });
+  });
+
   it("reports the plan limit on status 432", async () => {
     stubFetch(new Response(null, { status: 432 }));
     expect(await searchTavily("key", request)).toEqual({ kind: "plan_limit" });

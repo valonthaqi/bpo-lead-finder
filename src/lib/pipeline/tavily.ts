@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cleanText } from "./normalize";
 
 const SEARCH_URL = "https://api.tavily.com/search";
 const USAGE_URL = "https://api.tavily.com/usage";
@@ -74,7 +75,9 @@ export async function searchTavily(
       return { kind: "error", message: `Tavily returned ${response.status}` };
     }
 
-    const raw: unknown = await response.json();
+    const raw: unknown = JSON.parse(await response.text(), (_key, value) =>
+      typeof value === "string" ? cleanText(value) : value,
+    );
     tavilyResponseSchema.parse(raw);
     return { kind: "ok", raw };
   } catch (error) {

@@ -31,6 +31,10 @@ const COUNTRIES_DIALING_LOCALLY_WITH_ZERO = new Set([
 
 const TWO_PART_SUFFIX = /\.(com|co|org|net|gov|edu|ac|go|ne|or)\.[a-z]{2}$/;
 
+export function cleanText(text: string) {
+  return text.toWellFormed().replaceAll("\uFFFD", "").replaceAll("\u0000", "");
+}
+
 export function normalizeDomain(url: string): string | null {
   try {
     return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
