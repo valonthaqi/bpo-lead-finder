@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { companies, searches } from "../db/schema";
-import { COUNTRIES, filtersSchema } from "../filters";
+import { COUNTRIES, filtersSchema, type Filters } from "../filters";
 import { getSettings } from "../searches";
 import { buildDraft, dedupeCompanies } from "./dedupe";
 import { discover, type DiscoverResult, type FoundResults } from "./discover";
@@ -58,6 +58,10 @@ function toCompanyRow(searchId: number, company: ScoredCompany) {
   };
 }
 
+function setStatus(searchId: number, status: string) {
+  return db.update(searches).set({ status }).where(eq(searches.id, searchId));
+}
+
 function atMostEveryFewSeconds(action: () => Promise<void>) {
   let lastRunAt = 0;
   let isRunning = false;
@@ -73,6 +77,49 @@ function atMostEveryFewSeconds(action: () => Promise<void>) {
   };
 }
 
+function buildRanking(
+  filters: Filters,
+  found: FoundResults,
+  pagesByDomain: Map<string, ExtractedPage[]>,
+) {
+  const groups = groupCandidatesToFetch(found.candidates);
+  const drafts = [...groups].map(([domain, results]) =>
+    buildDraft(domain, results, pagesByDomain.get(domain)),
+  );
+  const mentions = found.allResults.map(buildMention);
+  return dedupeCompanies(drafts).map((company) =>
+    scoreCompany(company, filters, mentions),
+  );
+}
+
+async function saveRanking(
+  searchId: number,
+  filters: Filters,
+  found: FoundResults,
+  pagesByDomain: Map<string, ExtractedPage[]>,
+) {
+  const ranking = buildRanking(filters, found, pagesByDomain);
+  const domainsToFetch = groupCandidatesToFetch(found.candidates).size;
+
+  await db.transaction(async (tx) => {
+    await tx.delete(companies).where(eq(companies.searchId, searchId));
+    if (ranking.length > 0) {
+      await tx
+        .insert(companies)
+        .values(ranking.map((company) => toCompanyRow(searchId, company)));
+    }
+    await tx
+      .update(searches)
+      .set({
+        companiesFound: ranking.length,
+        domainsToFetch,
+        domainsFetched: pagesByDomain.size,
+      })
+      .where(eq(searches.id, searchId));
+  });
+  return ranking.length;
+}
+
 export async function runSearch(searchId: number) {
   try {
     const [search] = await db
@@ -85,38 +132,8 @@ export async function runSearch(searchId: number) {
 
     let found: FoundResults = { candidates: [], allResults: [] };
     const pagesByDomain = new Map<string, ExtractedPage[]>();
-
-    async function saveRanking() {
-      const groups = groupCandidatesToFetch(found.candidates);
-      const drafts = [...groups].map(([domain, results]) =>
-        buildDraft(domain, results, pagesByDomain.get(domain)),
-      );
-      const mentions = found.allResults.map(buildMention);
-      const ranking = dedupeCompanies(drafts).map((company) =>
-        scoreCompany(company, filters, mentions),
-      );
-
-      await db.transaction(async (tx) => {
-        await tx.delete(companies).where(eq(companies.searchId, searchId));
-        if (ranking.length > 0) {
-          await tx
-            .insert(companies)
-            .values(ranking.map((company) => toCompanyRow(searchId, company)));
-        }
-        await tx
-          .update(searches)
-          .set({
-            companiesFound: ranking.length,
-            domainsToFetch: groups.size,
-            domainsFetched: pagesByDomain.size,
-          })
-          .where(eq(searches.id, searchId));
-      });
-      return ranking.length;
-    }
-
     const saveRankingSoon = atMostEveryFewSeconds(async () => {
-      await saveRanking();
+      await saveRanking(searchId, filters, found, pagesByDomain);
     });
 
     const result = await discover(searchId, async (latest) => {
@@ -125,11 +142,8 @@ export async function runSearch(searchId: number) {
     });
     found = result;
 
-    await db
-      .update(searches)
-      .set({ status: "fetching" })
-      .where(eq(searches.id, searchId));
-    await saveRanking();
+    await setStatus(searchId, "fetching");
+    await saveRanking(searchId, filters, found, pagesByDomain);
 
     const domains = [...groupCandidatesToFetch(found.candidates).keys()];
     const { fetchConcurrency } = await getSettings();
@@ -141,11 +155,13 @@ export async function runSearch(searchId: number) {
       await saveRankingSoon();
     });
 
-    await db
-      .update(searches)
-      .set({ status: "scoring" })
-      .where(eq(searches.id, searchId));
-    const companyCount = await saveRanking();
+    await setStatus(searchId, "scoring");
+    const companyCount = await saveRanking(
+      searchId,
+      filters,
+      found,
+      pagesByDomain,
+    );
 
     await db
       .update(searches)
