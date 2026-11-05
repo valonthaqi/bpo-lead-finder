@@ -8,11 +8,13 @@ Pick a country, a language or market, and a campaign type. The app searches mult
 
 ## Run it locally
 
-Requires Node.js 20 or newer.
+Requires Node.js 22.12 or newer, a free Supabase project and a free Tavily API key.
 
 ```bash
 npm install
 cp .env.example .env.local   # then fill in the values
+npm run check:env            # checks settings without spending search credits
+npm run db:migrate
 npm run dev
 ```
 
@@ -40,4 +42,5 @@ npm run build       # production build
 npm run lint        # ESLint
 npm run typecheck   # TypeScript
 npm run format      # Prettier
+npm test            # unit tests
 ```
