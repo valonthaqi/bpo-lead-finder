@@ -107,7 +107,6 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
         .insert(searchQueries)
         .values({
           key: query.key,
-          searchId,
           source: query.source,
           country: query.country,
           text: query.text,
@@ -117,7 +116,6 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
         .onConflictDoUpdate({
           target: searchQueries.key,
           set: {
-            searchId,
             status: "pending",
             creditsCharged: sql`${searchQueries.creditsCharged} + 1`,
           },

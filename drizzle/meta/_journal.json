@@ -15,6 +15,13 @@
       "when": 1793905306594,
       "tag": "0001_small_vulture",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793907344525,
+      "tag": "0002_dapper_iron_lad",
+      "breakpoints": true
     }
   ]
 }

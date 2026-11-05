@@ -109,6 +109,19 @@ describe("runSearch", () => {
     expect(search.domainsFound).toBe(3);
   });
 
+  it("keeps stored results free after old searches are deleted", async () => {
+    const queries = stubTavily();
+    await runNewSearch(3);
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
+    await db.delete(companies);
+    await db.delete(searches);
+
+    const search = await runNewSearch(0);
+
+    expect(queries).toHaveLength(3);
+    expect(search.domainsFound).toBe(3);
+  });
+
   it("spends only on the new queries when run again with a higher cap", async () => {
     const queries = stubTavily();
     await runNewSearch(2);

@@ -38,9 +38,6 @@ export const searches = pgTable("searches", {
 
 export const searchQueries = pgTable("search_queries", {
   key: text("key").primaryKey(),
-  searchId: integer("search_id")
-    .notNull()
-    .references(() => searches.id),
   source: text("source").notNull(),
   country: text("country").notNull(),
   text: text("text").notNull(),
