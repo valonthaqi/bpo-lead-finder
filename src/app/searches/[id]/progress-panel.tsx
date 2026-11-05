@@ -12,10 +12,8 @@ const POLL_INTERVAL_MS = 2_500;
 
 export function ProgressPanel({
   initialSearch,
-  filters,
 }: {
   initialSearch: SearchProgress;
-  filters: { countryId: string; marketId: string; campaignId: string };
 }) {
   const router = useRouter();
   const [search, setSearch] = useState(initialSearch);
@@ -38,7 +36,11 @@ export function ProgressPanel({
     setError(null);
     const response = await fetch("/api/searches", {
       method: "POST",
-      body: JSON.stringify(filters),
+      body: JSON.stringify({
+        countryId: search.countryId,
+        marketId: search.marketId,
+        campaignId: search.campaignId,
+      }),
     });
     const body = await response.json();
     if (!response.ok) {

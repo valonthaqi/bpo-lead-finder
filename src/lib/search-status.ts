@@ -13,6 +13,9 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export type SearchProgress = {
   id: number;
+  countryId: string;
+  marketId: string;
+  campaignId: string;
   status: string;
   message: string | null;
   creditCap: number;

@@ -36,26 +36,7 @@ export default async function SearchPage({
         </h1>
       </div>
 
-      <ProgressPanel
-        initialSearch={{
-          id: search.id,
-          status: search.status,
-          message: search.message,
-          creditCap: search.creditCap,
-          creditsUsed: search.creditsUsed,
-          queriesPlanned: search.queriesPlanned,
-          queriesDone: search.queriesDone,
-          domainsFound: search.domainsFound,
-          domainsToFetch: search.domainsToFetch,
-          domainsFetched: search.domainsFetched,
-          companiesFound: search.companiesFound,
-        }}
-        filters={{
-          countryId: search.countryId,
-          marketId: search.marketId,
-          campaignId: search.campaignId,
-        }}
-      />
+      <ProgressPanel initialSearch={search} />
 
       {total > 0 && (
         <section>
