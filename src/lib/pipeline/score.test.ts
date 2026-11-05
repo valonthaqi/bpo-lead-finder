@@ -188,6 +188,37 @@ describe("scoreCompany", () => {
     expect(result.fitLabel).toBe("Low fit");
   });
 
+  it.each([
+    ["Outbound Voice Bots for Call Centers", "software vendor"],
+    ["Leading Call Center Software & Dialers", "software vendor"],
+    ["Buy Exclusive Insurance Leads for Agents", "lead seller"],
+    ["Final Expense Inbound Calls for Licensed Agents", "lead seller"],
+    ["Top 25 BPO Companies in Pakistan", "directory"],
+    ["Real Reviews & Public Opinions", "directory"],
+    ["Largest Life & Health Insurer in Pakistan", "insurer"],
+  ])("flags the title %s as a %s", (title, kind) => {
+    const result = scoreCompany(
+      company({ name: "Example", pages: [page("Text", title)] }),
+      filters,
+      [],
+    );
+    expect(labels(result).join(" ")).toContain(kind);
+  });
+
+  it.each([
+    "Zards BPO — Final Expense Call Center & Live Transfers for US Agencies",
+    "Nexa Global LLC | Insurance Lead Generation, Qualified Calls & Live Transfers",
+    "BALITECH | Professional BPO & Call Center Services in Pakistan",
+    "Nexus-Tel | Outbound Sales & Support Agency",
+  ])("does not flag the real call center title %s", (title) => {
+    const result = scoreCompany(
+      company({ name: "Example", pages: [page("Text", title)] }),
+      filters,
+      [],
+    );
+    expect(result.reasons.filter((reason) => reason.points < 0)).toEqual([]);
+  });
+
   it("never goes above 100", () => {
     const result = scoreCompany(
       company({

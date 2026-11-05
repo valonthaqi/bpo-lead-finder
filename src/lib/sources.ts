@@ -58,6 +58,7 @@ export const SOURCES: Source[] = [
 export const JOB_BOARD_DOMAINS = [
   "bebee.com",
   "bogotatrabaja.gov.co",
+  "cazvid.com",
   "brightspyre.com",
   "computrabajo.com",
   "disnakerja.id",
@@ -69,12 +70,15 @@ export const JOB_BOARD_DOMAINS = [
   "glassdoor.co.uk",
   "glassdoor.com",
   "glassdoor.com.br",
+  "glassdoor.com.hk",
+  "himalayas.app",
   "glassdoor.sg",
   "indeed.com",
   "jobgether.com",
   "jobleads.com",
   "jobrapido.com",
   "jooble.org",
+  "lensa.com",
   "magneto365.com",
   "medellinjoven.com",
   "mustakbil.com",
@@ -83,8 +87,11 @@ export const JOB_BOARD_DOMAINS = [
   "remoteanywherejob.com",
   "rozee.pk",
   "searchopal.com",
+  "taraki.co",
   "trabajo.org",
   "upwork.com",
+  "whatjobs.com",
+  "workana.com",
 ];
 
 const LISTING_DOMAINS = [

@@ -76,6 +76,24 @@ export const MARKET_PATTERNS: Record<
 
 export const DISQUALIFIERS = [
   {
+    label: "Looks like a software vendor, not a call center",
+    points: -50,
+    pattern:
+      /\b(voice bots?|digital workers|dialers?|ringless|hosted pbx|cloud call|(call|contact) cent(er|re) software)\b/i,
+  },
+  {
+    label: "Looks like a lead seller, not a call center",
+    points: -40,
+    pattern:
+      /\b(buy|aged|exclusive|insurance)\b.{0,30}\bleads\b|\bfor (licensed|independent) agents\b/i,
+  },
+  {
+    label: "Looks like a directory, review or news site",
+    points: -50,
+    pattern:
+      /\b(directory|leaderboard|marketplace|top \d+|best \d+|\d+ best|reviews?|industry platform|news)\b/i,
+  },
+  {
     label: "Looks like a job listing, not a company",
     points: -40,
     pattern: /\b(jobs? in|job openings|open positions|hiring)\b/i,
@@ -89,7 +107,7 @@ export const DISQUALIFIERS = [
     label: "Looks like an insurer, not a call center",
     points: -30,
     pattern:
-      /\b(takaful|insurance company|life insurance limited|insurance ltd)\b/i,
+      /\b(takaful|insurer|insurance company|insurance provider|travel insurance|life insurance limited|insurance ltd)\b/i,
   },
   {
     label: "Looks like an airline, school or publisher",
