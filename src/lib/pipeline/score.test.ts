@@ -141,6 +141,82 @@ describe("scoreCompany", () => {
     expect(upper.score).toBe(30);
   });
 
+  describe("country mentioned on the website", () => {
+    const COUNTRY_REASON = "Website names the selected country or a city in it";
+    const mexico = { ...filters, countryId: "mexico" } as const;
+    const hasCountryReason = (text: string, chosen: Filters = filters) =>
+      labels(
+        scoreCompany(company({ pages: [page(text)] }), chosen, []),
+      ).includes(COUNTRY_REASON);
+
+    it("counts a plain mention", () => {
+      expect(hasCountryReason("Our call floor is in Karachi.")).toBe(true);
+    });
+
+    it("ignores a phone country dropdown", () => {
+      expect(
+        hasCountryReason(
+          "Mauritania +222 Mauritius +230 Mayotte +262 Mexico +52 Micronesia +691 Moldova +373",
+          mexico,
+        ),
+      ).toBe(false);
+    });
+
+    it("ignores a dropdown written with brackets and flags", () => {
+      expect(
+        hasCountryReason(
+          "🇳🇱Netherlands (+31)🇳🇿New Zealand (+64)🇵🇰Pakistan (+92)🇵🇭Philippines (+63)",
+        ),
+      ).toBe(false);
+    });
+
+    it("ignores an alphabetical country picker", () => {
+      expect(
+        hasCountryReason(
+          "Martinique Mauritania Mauritius Mayotte Mexico Micronesia Moldova Monaco Mongolia",
+          mexico,
+        ),
+      ).toBe(false);
+    });
+
+    it("keeps a real list of a few locations", () => {
+      expect(
+        hasCountryReason(
+          "Delivery centers: Jamaica, the Dominican Republic, Colombia and Mexico.",
+          mexico,
+        ),
+      ).toBe(true);
+    });
+
+    it("isn't fooled by plus signs that aren't dial codes", () => {
+      const dominican = {
+        ...filters,
+        countryId: "dominican-republic",
+      } as const;
+      expect(
+        hasCountryReason(
+          "+20 años de experiencia. Sedes en Santo Domingo y Punta Cana +15 Sectores",
+          dominican,
+        ),
+      ).toBe(true);
+    });
+
+    it("finds a real mention later on a page that also has a dropdown", () => {
+      const dropdown =
+        "Mauritania +222 Mauritius +230 Mayotte +262 Mexico +52 Micronesia +691 Moldova +373";
+      const filler = "We answer every call quickly. ".repeat(10);
+      const text = `${dropdown} ${filler} Our team works from Tijuana.`;
+      const result = scoreCompany(company({ pages: [page(text)] }), mexico, []);
+      const reason = result.reasons.find((r) => r.label === COUNTRY_REASON);
+      expect(reason?.evidence).toContain("Tijuana");
+    });
+
+    it("gives the same result on repeat calls", () => {
+      expect(hasCountryReason("Based in Lahore.")).toBe(true);
+      expect(hasCountryReason("Based in Lahore.")).toBe(true);
+    });
+  });
+
   it("awards points for a phone in the selected country only", () => {
     const local = scoreCompany(
       company({ phones: ["+923001234567"] }),

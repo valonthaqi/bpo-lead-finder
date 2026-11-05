@@ -5,10 +5,14 @@ import { cleanText, normalizeCompanyName } from "./normalize";
 import {
   CAMPAIGN_PATTERNS,
   CHECKS,
+  COUNTRY_NAME_PATTERN,
   DISQUALIFIERS,
   FIT_LABELS,
   MARKET_PATTERNS,
+  MIN_COUNTRY_NAMES_IN_A_LIST,
+  MIN_DIAL_CODES_IN_A_LIST,
   MIN_NAME_LENGTH_FOR_MENTIONS,
+  NAME_WITH_DIAL_CODE_PATTERN,
   POINTS,
 } from "./scoring-rules";
 
@@ -35,12 +39,38 @@ export type ScoredCompany = CompanyDraft & {
 
 type Evidence = { evidence: string; url: string };
 
+function getSurroundingText(text: string, index: number, length: number) {
+  const start = Math.max(0, index - EVIDENCE_RADIUS);
+  return cleanText(text.slice(start, index + length + EVIDENCE_RADIUS)).trim();
+}
+
 function quote(text: string, pattern: RegExp) {
   const match = pattern.exec(text);
   if (!match) return null;
-  const start = Math.max(0, match.index - EVIDENCE_RADIUS);
-  const end = match.index + match[0].length + EVIDENCE_RADIUS;
-  return cleanText(text.slice(start, end)).trim();
+  return getSurroundingText(text, match.index, match[0].length);
+}
+
+function looksLikeCountryList(text: string) {
+  const countryNames = new Set(text.match(COUNTRY_NAME_PATTERN));
+  const dialCodes = text.match(NAME_WITH_DIAL_CODE_PATTERN) ?? [];
+  return (
+    countryNames.size >= MIN_COUNTRY_NAMES_IN_A_LIST ||
+    dialCodes.length >= MIN_DIAL_CODES_IN_A_LIST
+  );
+}
+
+function findCountryOnSite(
+  company: CompanyDraft,
+  pattern: RegExp,
+): Evidence | null {
+  for (const page of company.pages) {
+    const text = `${page.title} ${page.text}`;
+    for (const match of text.matchAll(pattern)) {
+      const evidence = getSurroundingText(text, match.index, match[0].length);
+      if (!looksLikeCountryList(evidence)) return { evidence, url: page.url };
+    }
+  }
+  return null;
 }
 
 function findOnSite(company: CompanyDraft, pattern: RegExp): Evidence | null {
@@ -66,7 +96,7 @@ function buildCountryPattern(filters: Filters) {
   const country = COUNTRIES.find((item) => item.id === filters.countryId);
   return new RegExp(
     `\\b(${[country?.name, ...(country?.cities ?? [])].join("|")})\\b`,
-    "i",
+    "gi",
   );
 }
 
@@ -154,7 +184,7 @@ export function scoreCompany(
   add(
     "Website names the selected country or a city in it",
     POINTS.countryOnSite,
-    findOnSite(company, buildCountryPattern(filters)),
+    findCountryOnSite(company, buildCountryPattern(filters)),
   );
 
   const countryPhone = findCountryPhone(company, filters);

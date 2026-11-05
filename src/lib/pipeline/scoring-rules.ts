@@ -15,6 +15,25 @@ export const FIT_LABELS = [
   { minScore: 0, label: "Low fit" },
 ];
 
+const REGION_CODES = Array.from({ length: 26 * 26 }, (_, index) =>
+  String.fromCharCode(65 + Math.floor(index / 26), 65 + (index % 26)),
+);
+const REGION_NAMES = new Intl.DisplayNames(["en"], {
+  type: "region",
+  fallback: "none",
+});
+const ALL_COUNTRY_NAMES = REGION_CODES.flatMap(
+  (code) => REGION_NAMES.of(code) ?? [],
+);
+
+export const COUNTRY_NAME_PATTERN = new RegExp(
+  `\\b(${ALL_COUNTRY_NAMES.join("|")})\\b`,
+  "g",
+);
+export const NAME_WITH_DIAL_CODE_PATTERN = /\p{L}\s*\(?\+\d{1,4}\b/gu;
+export const MIN_COUNTRY_NAMES_IN_A_LIST = 6;
+export const MIN_DIAL_CODES_IN_A_LIST = 3;
+
 export const CAMPAIGN_PATTERNS: Record<string, RegExp> = {
   medicare: /\bmedicare\b/i,
   aca: /\bACA\b|[Oo]bamacare|[Aa]ffordable [Cc]are [Aa]ct|[Hh]ealth [Ii]nsurance [Mm]arketplace/,
