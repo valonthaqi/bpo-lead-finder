@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Geist } from "next/font/google";
+import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
+
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "BPO Lead Finder",
@@ -13,16 +16,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-50 text-slate-900">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto max-w-6xl px-4 py-4">
-            <Link href="/" className="text-lg font-semibold">
-              BPO Lead Finder
-            </Link>
-          </div>
-        </header>
-        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+    <html lang="en" className={geist.variable}>
+      <body className="min-h-screen bg-muted/40 font-sans">
+        <SiteHeader />
+        <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">{children}</main>
       </body>
     </html>
   );
