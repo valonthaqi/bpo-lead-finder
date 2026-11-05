@@ -31,7 +31,7 @@ The search pipeline is in `src/lib/pipeline/`, with one file per step:
 
 ## Data rules
 
-The app collects public, company-level business information only, with no personal employee profiles. LinkedIn, Facebook and Instagram are never scraped directly; their public company pages are reached only through search API results. Other sites are fetched with robots.txt respected, rate limits applied and an honest User-Agent.
+The app collects public, company-level business information only, with no personal employee profiles. LinkedIn, Facebook and Instagram are currently left out and are never scraped directly. Other sites are fetched with robots.txt respected, rate limits applied and an honest User-Agent.
 
 ## Other commands
 
