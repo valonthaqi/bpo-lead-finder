@@ -133,6 +133,20 @@ describe("runSearch", () => {
     expect(search.status).toBe("stopped_budget");
   });
 
+  it("marks an empty response and does not pay for it again", async () => {
+    const queries = stubTavily({
+      searchResponse: () => Response.json({ results: [] }),
+    });
+    await runNewSearch(1);
+
+    const db = testDb.current as ReturnType<typeof drizzle>;
+    const [row] = await db.select().from(searchQueries);
+    expect(row.status).toBe("empty");
+
+    await runNewSearch(0);
+    expect(queries).toHaveLength(1);
+  });
+
   it("counts its own spending when Tavily's usage is behind", async () => {
     const queries = stubTavily({ creditsLeft: 2 });
     await runNewSearch(2);

@@ -74,7 +74,7 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
     );
   const storedResponses = new Map(
     storedRows
-      .filter((row) => row.status === "done")
+      .filter((row) => row.status === "done" || row.status === "empty")
       .map((row) => [row.key, row.rawResponse]),
   );
 
@@ -146,9 +146,13 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
       }
 
       raw = outcome.raw;
+      const { results } = tavilyResponseSchema.parse(raw);
       await db
         .update(searchQueries)
-        .set({ status: "done", rawResponse: raw })
+        .set({
+          status: results.length > 0 ? "done" : "empty",
+          rawResponse: raw,
+        })
         .where(eq(searchQueries.key, query.key));
     }
 
