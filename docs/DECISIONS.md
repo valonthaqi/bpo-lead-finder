@@ -82,3 +82,7 @@ Anything other than a rate limit or the plan limit stops the search with a clear
 ## 2026-11-05: PGlite for testing the credit logic
 
 The rules that spend credits run against real Postgres in memory with a fake Tavily, so the tests use the same SQL and migration as the app and can't spend a real credit. It's a dev-only dependency.
+
+## 2026-11-05: First yield measurement
+
+33 credits across "Pakistan, final expense" (23) and "Colombia, Spanish market, ACA" (10). Web queries found about 7 to 12 new domains per credit. Reading the titles by hand, about 15 of 99 Pakistan domains and 6 to 8 of 76 Colombia domains look like real call centers. The rest are job boards, scripts, news and insurers. Directory queries used 14 of the 33 credits, added 7 domains and returned nothing half the time. Follow-up changes are decided after review.
