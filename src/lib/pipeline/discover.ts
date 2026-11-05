@@ -27,6 +27,7 @@ export type Candidate = {
 
 export type DiscoverResult = {
   candidates: Candidate[];
+  allResults: Candidate[];
   stopReason: StopReason | null;
   creditsUsed: number;
   domainsFound: number;
@@ -87,6 +88,7 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
   let queriesWithoutNewDomains = 0;
   let stopReason: StopReason | null = null;
   const candidates: Candidate[] = [];
+  const allResults: Candidate[] = [];
   const domains = new Set<string>();
 
   for (const query of planned) {
@@ -159,15 +161,18 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
     const domainCountBefore = domains.size;
     for (const result of tavilyResponseSchema.parse(raw).results) {
       const domain = normalizeDomain(result.url);
-      if (!domain || !isCandidateDomain(domain)) continue;
-      domains.add(domain);
-      candidates.push({
+      if (!domain) continue;
+      const candidate = {
         url: result.url,
         domain,
         title: result.title ?? "",
         snippet: result.content ?? "",
         source: query.source,
-      });
+      };
+      allResults.push(candidate);
+      if (!isCandidateDomain(domain)) continue;
+      domains.add(domain);
+      candidates.push(candidate);
     }
     const source = SOURCES.find((item) => item.id === query.source);
     if (source?.countsForEarlyStop) {
@@ -182,5 +187,11 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
       .where(eq(searches.id, searchId));
   }
 
-  return { candidates, stopReason, creditsUsed, domainsFound: domains.size };
+  return {
+    candidates,
+    allResults,
+    stopReason,
+    creditsUsed,
+    domainsFound: domains.size,
+  };
 }

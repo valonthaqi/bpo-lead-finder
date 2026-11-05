@@ -1,10 +1,12 @@
 import { parseArgs } from "node:util";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { closeDb, db } from "../src/lib/db";
-import { searches } from "../src/lib/db/schema";
+import { companies, searches } from "../src/lib/db/schema";
 import { filtersSchema } from "../src/lib/filters";
 import { runSearch } from "../src/lib/pipeline";
 import { createSearch } from "../src/lib/searches";
+
+const RESULTS_TO_PRINT = 25;
 
 async function main() {
   const { values } = parseArgs({
@@ -27,7 +29,26 @@ async function main() {
   await runSearch(id);
 
   const [search] = await db.select().from(searches).where(eq(searches.id, id));
-  console.log(search);
+  console.log(`${search.status}: ${search.message}`);
+
+  const ranked = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.searchId, id))
+    .orderBy(desc(companies.score))
+    .limit(RESULTS_TO_PRINT);
+
+  for (const company of ranked) {
+    console.log(
+      `\n${company.score} ${company.fitLabel}: ${company.name} (${company.domains.join(", ")})`,
+    );
+    console.log(`  ${company.phones.join(", ")} ${company.emails.join(", ")}`);
+    for (const reason of company.reasons) {
+      console.log(
+        `  ${reason.points >= 0 ? "+" : ""}${reason.points} ${reason.label}`,
+      );
+    }
+  }
 }
 
 main()

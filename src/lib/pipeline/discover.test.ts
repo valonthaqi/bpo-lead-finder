@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { searches, searchQueries } from "../db/schema";
+import { companies, searches, searchQueries } from "../db/schema";
 import { createTestDb } from "../db/test-db";
 import type { Filters } from "../filters";
 
@@ -24,6 +24,7 @@ const filters: Filters = {
 type TavilyStub = {
   creditsLeft?: number;
   searchResponse?: (query: string, callNumber: number) => Response;
+  sites?: Record<string, string>;
 };
 
 function uniqueDomainResponse(query: string) {
@@ -33,13 +34,21 @@ function uniqueDomainResponse(query: string) {
   });
 }
 
-function stubTavily({ creditsLeft = 500, searchResponse }: TavilyStub = {}) {
+function stubTavily({
+  creditsLeft = 500,
+  searchResponse,
+  sites = {},
+}: TavilyStub = {}) {
   const queries: string[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
       if (!url.startsWith("https://api.tavily.com")) {
-        return new Response(null, { status: 404 });
+        return sites[url]
+          ? new Response(sites[url], {
+              headers: { "content-type": "text/html" },
+            })
+          : new Response(null, { status: 404 });
       }
       if (url.endsWith("/usage")) {
         return Response.json({
@@ -173,6 +182,44 @@ describe("runSearch", () => {
     const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
     const [row] = await db.select().from(searchQueries);
     expect(JSON.stringify(row.rawResponse)).toContain("Axxon BPO");
+  });
+
+  it("ranks companies from search through fetching and scoring", async () => {
+    stubTavily({
+      searchResponse: () =>
+        Response.json({
+          results: [
+            { url: "https://zardsbpo.com/about", title: "Zards BPO" },
+            { url: "https://www.zardsbpo.pk/", title: "Zards BPO Karachi" },
+            { url: "https://cigna.com", title: "Health insurance plans" },
+            { url: "https://pk.indeed.com/1", title: "Closer at Zards BPO" },
+          ],
+        }),
+      sites: {
+        "https://zardsbpo.com/":
+          '<title>Zards BPO</title><a href="tel:+923001234567">Call</a><p>Final expense BPO in Karachi for US agencies. Email info@zardsbpo.com</p>',
+        "https://zardsbpo.pk/": "<title>Zards BPO</title><p>Karachi</p>",
+      },
+    });
+
+    const search = await runNewSearch(1);
+
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
+    const rows = await db.select().from(companies);
+    expect(rows).toHaveLength(1);
+    const [company] = rows;
+    expect(company.name).toBe("Zards BPO");
+    expect(company.domains.sort()).toEqual(["zardsbpo.com", "zardsbpo.pk"]);
+    expect(company.phones).toEqual(["+923001234567"]);
+    expect(company.emails).toEqual(["info@zardsbpo.com"]);
+    expect(company.campaigns).toEqual(["Final expense"]);
+    expect(company.fitLabel).toBe("Strong fit");
+    expect(company.reasons.map((reason) => reason.label)).toContain(
+      "Named on 1 other site(s)",
+    );
+    expect(search.domainsToFetch).toBe(2);
+    expect(search.domainsFetched).toBe(2);
+    expect(search.companiesFound).toBe(1);
   });
 
   it("stops cleanly when Tavily reports the plan limit", async () => {

@@ -1,10 +1,18 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { searches } from "../db/schema";
+import { companies, searches } from "../db/schema";
+import { COUNTRIES, filtersSchema, type Filters } from "../filters";
+import { buildDraft, dedupeCompanies } from "./dedupe";
 import { discover, type DiscoverResult } from "./discover";
+import { groupCandidatesToFetch } from "./evidence";
+import type { ExtractedPage } from "./extract";
+import { fetchCompanyPages } from "./fetch";
+import { buildMention, scoreCompany, type ScoredCompany } from "./score";
 
-export function describeOutcome(result: DiscoverResult) {
-  const found = `${result.domainsFound} candidate domains found using ${result.creditsUsed} new credits.`;
+const FETCH_BATCH_SIZE = 5;
+
+export function describeOutcome(result: DiscoverResult, companyCount: number) {
+  const found = `${companyCount} companies ranked from ${result.domainsFound} candidate domains, using ${result.creditsUsed} new credits.`;
   switch (result.stopReason) {
     case "credit_cap":
       return `Stopped at this search's credit cap: ${found}`;
@@ -23,14 +31,89 @@ function isBudgetStop(result: DiscoverResult) {
   );
 }
 
+async function fetchDomains(
+  searchId: number,
+  filters: Filters,
+  domains: string[],
+) {
+  const country = COUNTRIES.find((item) => item.id === filters.countryId);
+  if (!country) throw new Error("Unknown filter value");
+
+  const pagesByDomain = new Map<string, ExtractedPage[]>();
+  for (let start = 0; start < domains.length; start += FETCH_BATCH_SIZE) {
+    const batch = domains.slice(start, start + FETCH_BATCH_SIZE);
+    const pages = await Promise.all(
+      batch.map((domain) => fetchCompanyPages(domain, country.isoCode)),
+    );
+    batch.forEach((domain, index) => pagesByDomain.set(domain, pages[index]));
+    await db
+      .update(searches)
+      .set({ domainsFetched: pagesByDomain.size })
+      .where(eq(searches.id, searchId));
+  }
+  return pagesByDomain;
+}
+
+function toCompanyRow(searchId: number, company: ScoredCompany) {
+  const sourcesByUrl = new Map(company.sources.map((link) => [link.url, link]));
+  return {
+    searchId,
+    name: company.name,
+    domains: company.domains,
+    phones: company.phones,
+    emails: company.emails,
+    address: company.address,
+    socialLinks: company.socialLinks,
+    campaigns: company.campaigns,
+    score: company.score,
+    fitLabel: company.fitLabel,
+    reasons: company.reasons,
+    sources: [...sourcesByUrl.values()],
+  };
+}
+
 export async function runSearch(searchId: number) {
   try {
     const result = await discover(searchId);
+    const [search] = await db
+      .select()
+      .from(searches)
+      .where(eq(searches.id, searchId));
+    const filters = filtersSchema.parse(search);
+
+    const groups = groupCandidatesToFetch(result.candidates);
+    await db
+      .update(searches)
+      .set({ status: "fetching", domainsToFetch: groups.size })
+      .where(eq(searches.id, searchId));
+    const pagesByDomain = await fetchDomains(searchId, filters, [
+      ...groups.keys(),
+    ]);
+
+    await db
+      .update(searches)
+      .set({ status: "scoring" })
+      .where(eq(searches.id, searchId));
+    const drafts = [...groups].map(([domain, results]) =>
+      buildDraft(domain, results, pagesByDomain.get(domain) ?? []),
+    );
+    const mentions = result.allResults.map(buildMention);
+    const scored = dedupeCompanies(drafts).map((company) =>
+      scoreCompany(company, filters, mentions),
+    );
+
+    if (scored.length > 0) {
+      await db
+        .insert(companies)
+        .values(scored.map((company) => toCompanyRow(searchId, company)));
+    }
+
     await db
       .update(searches)
       .set({
         status: isBudgetStop(result) ? "stopped_budget" : "completed",
-        message: describeOutcome(result),
+        message: describeOutcome(result, scored.length),
+        companiesFound: scored.length,
       })
       .where(eq(searches.id, searchId));
   } catch (error) {
