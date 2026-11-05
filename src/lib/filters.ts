@@ -164,13 +164,19 @@ export const filtersSchema = z.object({
 
 export type Filters = z.infer<typeof filtersSchema>;
 
-export function describeFilters(filters: {
-  countryId: string;
-  marketId: string;
-  campaignId: string;
-}) {
+type FilterIds = { countryId: string; marketId: string; campaignId: string };
+
+export function getFilterOptions(filters: FilterIds) {
   const country = COUNTRIES.find((item) => item.id === filters.countryId);
   const market = MARKETS.find((item) => item.id === filters.marketId);
   const campaign = CAMPAIGNS.find((item) => item.id === filters.campaignId);
-  return [country?.name, market?.name, campaign?.name].join(", ");
+  if (!country || !market || !campaign) {
+    throw new Error("Unknown filter value");
+  }
+  return { country, market, campaign };
+}
+
+export function describeFilters(filters: FilterIds) {
+  const { country, market, campaign } = getFilterOptions(filters);
+  return [country.name, market.name, campaign.name].join(", ");
 }

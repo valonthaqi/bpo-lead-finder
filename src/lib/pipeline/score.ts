@@ -1,5 +1,5 @@
 import { parsePhoneNumberFromString } from "libphonenumber-js";
-import { CAMPAIGNS, COUNTRIES, type Filters } from "../filters";
+import { CAMPAIGNS, getFilterOptions, type Filters } from "../filters";
 import type { CompanyDraft } from "./dedupe";
 import { cleanText, normalizeCompanyName } from "./normalize";
 import {
@@ -102,17 +102,15 @@ function findInResults(
 }
 
 function buildCountryPattern(filters: Filters) {
-  const country = COUNTRIES.find((item) => item.id === filters.countryId);
-  return new RegExp(
-    `\\b(${[country?.name, ...(country?.cities ?? [])].join("|")})\\b`,
-    "gi",
-  );
+  const { country } = getFilterOptions(filters);
+  const places = [country.name, ...country.cities].join("|");
+  return new RegExp(`\\b(${places})\\b`, "gi");
 }
 
 function findCountryPhone(company: CompanyDraft, filters: Filters) {
-  const country = COUNTRIES.find((item) => item.id === filters.countryId);
+  const { country } = getFilterOptions(filters);
   return company.phones.find(
-    (phone) => parsePhoneNumberFromString(phone)?.country === country?.isoCode,
+    (phone) => parsePhoneNumberFromString(phone)?.country === country.isoCode,
   );
 }
 
@@ -161,18 +159,18 @@ function scoreWebsiteRead(company: CompanyDraft) {
 }
 
 function scoreCampaign(company: CompanyDraft, filters: Filters) {
-  const campaign = CAMPAIGNS.find((item) => item.id === filters.campaignId);
+  const { campaign } = getFilterOptions(filters);
   const pattern = CAMPAIGN_PATTERNS[filters.campaignId];
   const onSite = findOnSite(company, pattern);
   if (onSite) {
     return toReasons(
-      `Website mentions ${campaign?.name}`,
+      `Website mentions ${campaign.name}`,
       POINTS.campaignOnSite,
       onSite,
     );
   }
   return toReasons(
-    `Search result mentions ${campaign?.name}`,
+    `Search result mentions ${campaign.name}`,
     POINTS.campaignInResults,
     findInResults(company, pattern),
   );

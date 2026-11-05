@@ -1,4 +1,4 @@
-import { CAMPAIGNS, COUNTRIES, MARKETS, type Filters } from "../filters";
+import { getFilterOptions, type Filters } from "../filters";
 import { SOURCES } from "../sources";
 
 export const MAX_QUERIES_WITHOUT_NEW_DOMAINS = 15;
@@ -18,12 +18,7 @@ export function buildQueryKey(source: string, country: string, text: string) {
 }
 
 export function buildQueries(filters: Filters): PlannedQuery[] {
-  const country = COUNTRIES.find((item) => item.id === filters.countryId);
-  const market = MARKETS.find((item) => item.id === filters.marketId);
-  const campaign = CAMPAIGNS.find((item) => item.id === filters.campaignId);
-  if (!country || !market || !campaign) {
-    throw new Error("Unknown filter value");
-  }
+  const { country, market, campaign } = getFilterOptions(filters);
 
   const tavilyCountry = country.name.toLowerCase();
   const locations = [country.name, ...country.cities];

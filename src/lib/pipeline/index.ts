@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { companies, searches } from "../db/schema";
-import { COUNTRIES, filtersSchema, type Filters } from "../filters";
+import { filtersSchema, getFilterOptions, type Filters } from "../filters";
 import { getSettings } from "../searches";
 import { buildDraft, dedupeCompanies } from "./dedupe";
 import { discover, type DiscoverResult, type FoundResults } from "./discover";
@@ -112,8 +112,7 @@ export async function runSearch(searchId: number) {
       .from(searches)
       .where(eq(searches.id, searchId));
     const filters = filtersSchema.parse(search);
-    const country = COUNTRIES.find((item) => item.id === filters.countryId);
-    if (!country) throw new Error("Unknown filter value");
+    const { country } = getFilterOptions(filters);
 
     let found: FoundResults = { candidates: [], allResults: [] };
     const pagesByDomain = new Map<string, ExtractedPage[]>();
