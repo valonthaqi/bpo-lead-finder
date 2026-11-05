@@ -48,6 +48,90 @@ function buildTavilyDomains(sourceId: string) {
   };
 }
 
+type DiscoveryProgress = FoundResults & {
+  domains: Set<string>;
+  queriesDone: number;
+};
+
+async function loadStoredResponses(planned: PlannedQuery[]) {
+  const rows = await db
+    .select()
+    .from(searchQueries)
+    .where(
+      inArray(
+        searchQueries.key,
+        planned.map((query) => query.key),
+      ),
+    );
+  return new Map(
+    rows
+      .filter((row) => row.status === "done" || row.status === "empty")
+      .map((row) => [row.key, row.rawResponse]),
+  );
+}
+
+function addResponse(
+  progress: DiscoveryProgress,
+  query: PlannedQuery,
+  raw: unknown,
+) {
+  const domainCountBefore = progress.domains.size;
+  for (const result of tavilyResponseSchema.parse(raw).results) {
+    const domain = normalizeDomain(result.url);
+    if (!domain) continue;
+    const candidate = {
+      url: result.url,
+      domain,
+      title: result.title ?? "",
+      snippet: result.content ?? "",
+      source: query.source,
+    };
+    progress.allResults.push(candidate);
+    if (!isCandidateDomain(domain)) continue;
+    progress.domains.add(domain);
+    progress.candidates.push(candidate);
+  }
+  progress.queriesDone += 1;
+  return progress.domains.size > domainCountBefore;
+}
+
+function saveProgress(searchId: number, progress: DiscoveryProgress) {
+  return db
+    .update(searches)
+    .set({
+      queriesDone: progress.queriesDone,
+      domainsFound: progress.domains.size,
+    })
+    .where(eq(searches.id, searchId));
+}
+
+async function searchAndStore(apiKey: string, query: PlannedQuery) {
+  const outcome = await searchTavily(apiKey, {
+    query: query.text,
+    country: query.country,
+    ...buildTavilyDomains(query.source),
+  });
+
+  if (outcome.kind !== "ok") {
+    await db
+      .update(searchQueries)
+      .set({ status: "failed" })
+      .where(eq(searchQueries.key, query.key));
+    if (outcome.kind === "plan_limit") return null;
+    throw new Error(outcome.message);
+  }
+
+  const { results } = tavilyResponseSchema.parse(outcome.raw);
+  await db
+    .update(searchQueries)
+    .set({
+      status: results.length > 0 ? "done" : "empty",
+      rawResponse: outcome.raw,
+    })
+    .where(eq(searchQueries.key, query.key));
+  return outcome.raw;
+}
+
 export async function discover(
   searchId: number,
   onResultsChanged: (found: FoundResults) => Promise<void>,
@@ -64,60 +148,20 @@ export async function discover(
     .set({ status: "discovering", queriesPlanned: planned.length })
     .where(eq(searches.id, searchId));
 
-  const storedRows = await db
-    .select()
-    .from(searchQueries)
-    .where(
-      inArray(
-        searchQueries.key,
-        planned.map((query) => query.key),
-      ),
-    );
-  const storedResponses = new Map(
-    storedRows
-      .filter((row) => row.status === "done" || row.status === "empty")
-      .map((row) => [row.key, row.rawResponse]),
-  );
-
-  const candidates: Candidate[] = [];
-  const allResults: Candidate[] = [];
-  const domains = new Set<string>();
-  let queriesDone = 0;
-
-  function addResponse(query: PlannedQuery, raw: unknown) {
-    const domainCountBefore = domains.size;
-    for (const result of tavilyResponseSchema.parse(raw).results) {
-      const domain = normalizeDomain(result.url);
-      if (!domain) continue;
-      const candidate = {
-        url: result.url,
-        domain,
-        title: result.title ?? "",
-        snippet: result.content ?? "",
-        source: query.source,
-      };
-      allResults.push(candidate);
-      if (!isCandidateDomain(domain)) continue;
-      domains.add(domain);
-      candidates.push(candidate);
-    }
-    queriesDone += 1;
-    return domains.size > domainCountBefore;
-  }
-
-  function saveProgress() {
-    return db
-      .update(searches)
-      .set({ queriesDone, domainsFound: domains.size })
-      .where(eq(searches.id, searchId));
-  }
+  const storedResponses = await loadStoredResponses(planned);
+  const progress: DiscoveryProgress = {
+    candidates: [],
+    allResults: [],
+    domains: new Set(),
+    queriesDone: 0,
+  };
 
   for (const query of planned) {
     const raw = storedResponses.get(query.key);
-    if (raw !== undefined) addResponse(query, raw);
+    if (raw !== undefined) addResponse(progress, query, raw);
   }
-  await saveProgress();
-  await onResultsChanged({ candidates, allResults });
+  await saveProgress(searchId, progress);
+  await onResultsChanged(progress);
 
   const queriesToRun = planned.filter(
     (query) => !storedResponses.has(query.key),
@@ -145,49 +189,28 @@ export async function discover(
     }
     creditsUsed += 1;
 
-    const outcome = await searchTavily(apiKey, {
-      query: query.text,
-      country: query.country,
-      ...buildTavilyDomains(query.source),
-    });
-
-    if (outcome.kind !== "ok") {
-      await db
-        .update(searchQueries)
-        .set({ status: "failed" })
-        .where(eq(searchQueries.key, query.key));
-      if (outcome.kind === "plan_limit") {
-        stopReason = "no_credits";
-        return;
-      }
-      throw new Error(outcome.message);
+    const raw = await searchAndStore(apiKey, query);
+    if (raw === null) {
+      stopReason = "no_credits";
+      return;
     }
 
-    const { results } = tavilyResponseSchema.parse(outcome.raw);
-    await db
-      .update(searchQueries)
-      .set({
-        status: results.length > 0 ? "done" : "empty",
-        rawResponse: outcome.raw,
-      })
-      .where(eq(searchQueries.key, query.key));
-
-    const foundNewDomain = addResponse(query, outcome.raw);
+    const foundNewDomain = addResponse(progress, query, raw);
     const source = SOURCES.find((item) => item.id === query.source);
     if (source?.countsForEarlyStop) {
       queriesWithoutNewDomains = foundNewDomain
         ? 0
         : queriesWithoutNewDomains + 1;
     }
-    await saveProgress();
-    await onResultsChanged({ candidates, allResults });
+    await saveProgress(searchId, progress);
+    await onResultsChanged(progress);
   });
 
   return {
-    candidates,
-    allResults,
+    candidates: progress.candidates,
+    allResults: progress.allResults,
     stopReason,
     creditsUsed,
-    domainsFound: domains.size,
+    domainsFound: progress.domains.size,
   };
 }
