@@ -33,13 +33,15 @@ describe("buildQueries", () => {
     );
   });
 
-  it("starts ACA with a clear term and Spanish with a Spanish phrase", () => {
+  it("starts ACA with a clear term and Spanish with an English phrase", () => {
     const [first] = buildQueries({
       countryId: "colombia",
       marketId: "spanish",
       campaignId: "aca",
     });
-    expect(first.text).toBe("Obamacare centro de llamadas Colombia");
+    expect(first.text).toBe(
+      "ACA health insurance bilingual call center Colombia",
+    );
   });
 
   it("never plans the same query twice", () => {
@@ -53,7 +55,7 @@ describe("buildQueries", () => {
     const directories = queries.filter(
       (query) => query.source === "directories",
     );
-    expect(web).toHaveLength(4 * 8 * 6);
+    expect(web).toHaveLength(4 * 9 * 6);
     expect(directories).toHaveLength(2);
   });
 

@@ -60,6 +60,7 @@ export const MARKETS = [
     servicePhrases: [
       "call center",
       "BPO",
+      "live transfers",
       "outbound call center",
       "inbound call center",
       "licensed agents call center",
@@ -72,12 +73,14 @@ export const MARKETS = [
     id: "spanish",
     name: "Spanish market",
     servicePhrases: [
+      "bilingual call center",
+      "call center",
+      "BPO",
+      "live transfers",
       "centro de llamadas",
       "call center bilingüe",
       "centro de contacto",
       "agentes en español call center",
-      "call center",
-      "BPO",
     ],
   },
 ] as const;
@@ -97,8 +100,8 @@ export const CAMPAIGNS = [
     id: "aca",
     name: "ACA (Obamacare)",
     searchTerms: [
-      "Obamacare",
       "ACA health insurance",
+      "Obamacare",
       "Affordable Care Act",
       "ACA",
     ],
@@ -108,9 +111,9 @@ export const CAMPAIGNS = [
     name: "Final expense",
     searchTerms: [
       "final expense",
+      "final expense life insurance",
       "burial insurance",
       "funeral insurance",
-      "final expense life insurance",
     ],
   },
   {
