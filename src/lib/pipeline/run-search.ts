@@ -4,7 +4,12 @@ import { companies, searches } from "../db/schema";
 import { filtersSchema, getFilterOptions, type Filters } from "../filters";
 import { getSettings } from "../searches";
 import { buildDraft, dedupeCompanies } from "./dedupe";
-import { discover, type DiscoverResult, type FoundResults } from "./discover";
+import {
+  discover,
+  type Candidate,
+  type DiscoverResult,
+  type FoundResults,
+} from "./discover";
 import { groupCandidatesToFetch } from "./evidence";
 import type { ExtractedPage } from "./extract";
 import { fetchCompanyPages } from "./fetch";
@@ -64,14 +69,14 @@ function setStatus(searchId: number, status: string) {
 
 function buildRanking(
   filters: Filters,
-  found: FoundResults,
+  groups: Map<string, Candidate[]>,
+  allResults: Candidate[],
   pagesByDomain: Map<string, ExtractedPage[]>,
 ) {
-  const groups = groupCandidatesToFetch(found.candidates);
   const drafts = [...groups].map(([domain, results]) =>
     buildDraft(domain, results, pagesByDomain.get(domain)),
   );
-  const mentions = found.allResults.map(buildMention);
+  const mentions = allResults.map(buildMention);
   return dedupeCompanies(drafts).map((company) =>
     scoreCompany(company, filters, mentions),
   );
@@ -83,8 +88,13 @@ async function saveRanking(
   found: FoundResults,
   pagesByDomain: Map<string, ExtractedPage[]>,
 ) {
-  const ranking = buildRanking(filters, found, pagesByDomain);
-  const domainsToFetch = groupCandidatesToFetch(found.candidates).size;
+  const groups = groupCandidatesToFetch(found.candidates);
+  const ranking = buildRanking(
+    filters,
+    groups,
+    found.allResults,
+    pagesByDomain,
+  );
 
   await db.transaction(async (tx) => {
     await tx.delete(companies).where(eq(companies.searchId, searchId));
@@ -97,7 +107,7 @@ async function saveRanking(
       .update(searches)
       .set({
         companiesFound: ranking.length,
-        domainsToFetch,
+        domainsToFetch: groups.size,
         domainsFetched: pagesByDomain.size,
       })
       .where(eq(searches.id, searchId));
