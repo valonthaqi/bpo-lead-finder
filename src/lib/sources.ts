@@ -1,6 +1,5 @@
-export type Source = {
+type Source = {
   id: string;
-  name: string;
   enabled: boolean;
   domains: string[];
   maxQueries: number;
@@ -10,7 +9,6 @@ export type Source = {
 export const SOURCES: Source[] = [
   {
     id: "web",
-    name: "Web search",
     enabled: true,
     domains: [],
     maxQueries: Infinity,
@@ -18,7 +16,6 @@ export const SOURCES: Source[] = [
   },
   {
     id: "directories",
-    name: "Business directories",
     enabled: true,
     domains: [
       "clutch.co",
@@ -31,7 +28,6 @@ export const SOURCES: Source[] = [
   },
   {
     id: "linkedin",
-    name: "LinkedIn",
     enabled: false,
     domains: ["linkedin.com"],
     maxQueries: 2,
@@ -39,7 +35,6 @@ export const SOURCES: Source[] = [
   },
   {
     id: "facebook",
-    name: "Facebook",
     enabled: false,
     domains: ["facebook.com"],
     maxQueries: 2,
@@ -47,7 +42,6 @@ export const SOURCES: Source[] = [
   },
   {
     id: "instagram",
-    name: "Instagram",
     enabled: false,
     domains: ["instagram.com"],
     maxQueries: 2,

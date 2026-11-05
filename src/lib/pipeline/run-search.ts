@@ -24,7 +24,7 @@ export function describeError(error: unknown) {
   return deepest instanceof Error ? deepest.message : "Unknown error";
 }
 
-export function describeOutcome(result: DiscoverResult, companyCount: number) {
+function describeOutcome(result: DiscoverResult, companyCount: number) {
   const found = `${companyCount} companies ranked from ${result.domainsFound} candidate domains, using ${result.creditsUsed} new credits.`;
   switch (result.stopReason) {
     case "credit_cap":

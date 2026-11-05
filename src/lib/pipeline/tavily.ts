@@ -23,14 +23,14 @@ const usageSchema = z.object({
   }),
 });
 
-export type TavilyRequest = {
+type TavilyRequest = {
   query: string;
   country: string;
   includeDomains: string[];
   excludeDomains: string[];
 };
 
-export type TavilyOutcome =
+type TavilyOutcome =
   | { kind: "ok"; raw: unknown }
   | { kind: "plan_limit" }
   | { kind: "error"; message: string };

@@ -27,7 +27,7 @@ export type ScoreReason = {
 
 export type CompanySourceLink = { source: string; url: string };
 
-export type Mention = { domain: string; url: string; text: string };
+type Mention = { domain: string; url: string; text: string };
 
 export type ScoredCompany = CompanyDraft & {
   campaigns: string[];
