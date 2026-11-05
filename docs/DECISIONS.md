@@ -86,3 +86,11 @@ The rules that spend credits run against real Postgres in memory with a fake Tav
 ## 2026-11-05: First yield measurement
 
 33 credits across "Pakistan, final expense" (23) and "Colombia, Spanish market, ACA" (10). Web queries found about 7 to 12 new domains per credit. Reading the titles by hand, about 15 of 99 Pakistan domains and 6 to 8 of 76 Colombia domains look like real call centers. The rest are job boards, scripts, news and insurers. Directory queries used 14 of the 33 credits, added 7 domains and returned nothing half the time. Follow-up changes are decided after review.
+
+## 2026-11-05: Search changes after the first measurement
+
+- **Three domain lists in `sources.ts`.** Noise (video, forums, documents, news, people-data sites) is excluded at Tavily, so it doesn't use up result slots. Job boards and directories are still searched, and their raw results are stored, but they aren't candidates because they aren't call centers. Filtering also runs locally, because stored responses from before a list changed still contain them.
+- **Two directory queries per search, not counted towards early stop.** They can only return the same few sites, so "no new domains" says nothing about them.
+- **Clearer query order.** ACA starts with "Obamacare", because the bare abbreviation pulled in unrelated results. Spanish searches start with Spanish phrases.
+- **Local credit tally.** Tavily's usage endpoint still showed 0 after 33 searches while its dashboard showed 33, so it lags. Remaining credits use the larger of Tavily's usage and the local count.
+- **Job board company names.** Postings name real companies, but extracting them is optional and depends on time.
