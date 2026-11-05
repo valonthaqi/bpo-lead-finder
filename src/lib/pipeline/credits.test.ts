@@ -11,7 +11,8 @@ vi.mock("../db", () => ({
   },
 }));
 
-const { reserveCredit } = await import("./credits");
+const { getBudgetStopReason, getCreditsRemaining, reserveCredit } =
+  await import("./credits");
 const { createSearch } = await import("../searches");
 
 const filters = {
@@ -131,5 +132,47 @@ describe("reserveCredit", () => {
 
     const [row] = await database().select().from(searchQueries);
     expect(row.creditsCharged).toBe(2);
+  });
+});
+
+describe("getCreditsRemaining", () => {
+  it("uses the local tally when Tavily's usage is behind", () => {
+    expect(
+      getCreditsRemaining({
+        planLimit: 1000,
+        planUsage: 0,
+        localCreditsUsed: 33,
+      }),
+    ).toBe(967);
+  });
+
+  it("uses Tavily's usage when credits were spent outside this app", () => {
+    expect(
+      getCreditsRemaining({
+        planLimit: 1000,
+        planUsage: 50,
+        localCreditsUsed: 33,
+      }),
+    ).toBe(950);
+  });
+});
+
+describe("getBudgetStopReason", () => {
+  const running = { creditsUsed: 5, creditCap: 100, creditsRemaining: 500 };
+
+  it("keeps going while within every limit", () => {
+    expect(getBudgetStopReason(running)).toBeNull();
+  });
+
+  it("stops at the per-search credit cap", () => {
+    expect(getBudgetStopReason({ ...running, creditsUsed: 100 })).toBe(
+      "credit_cap",
+    );
+  });
+
+  it("stops when the monthly credits are gone", () => {
+    expect(getBudgetStopReason({ ...running, creditsRemaining: 0 })).toBe(
+      "no_credits",
+    );
   });
 });

@@ -1,14 +1,31 @@
 import { eq, gte, sql } from "drizzle-orm";
 import { db } from "../db";
 import { searches, searchQueries } from "../db/schema";
-import {
-  getBudgetStopReason,
-  getCreditsRemaining,
-  type PlannedQuery,
-  type StopReason,
-} from "./queries";
+import type { PlannedQuery } from "./queries";
 
 const CREDIT_LOCK_ID = 1;
+
+export type StopReason = "credit_cap" | "no_credits" | "no_new_domains";
+
+export function getCreditsRemaining(credits: {
+  planLimit: number;
+  planUsage: number;
+  localCreditsUsed: number;
+}) {
+  return (
+    credits.planLimit - Math.max(credits.planUsage, credits.localCreditsUsed)
+  );
+}
+
+export function getBudgetStopReason(state: {
+  creditsUsed: number;
+  creditCap: number;
+  creditsRemaining: number;
+}): StopReason | null {
+  if (state.creditsUsed >= state.creditCap) return "credit_cap";
+  if (state.creditsRemaining <= 0) return "no_credits";
+  return null;
+}
 
 export async function reserveCredit(
   searchId: number,

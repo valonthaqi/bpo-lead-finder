@@ -4,13 +4,12 @@ import { searches, searchQueries } from "../db/schema";
 import { readEnv } from "../env";
 import { filtersSchema } from "../filters";
 import { DISABLED_DOMAINS, isCandidateDomain, SOURCES } from "../sources";
-import { reserveCredit } from "./credits";
+import { reserveCredit, type StopReason } from "./credits";
 import { normalizeDomain } from "./normalize";
 import {
   buildQueries,
   MAX_QUERIES_WITHOUT_NEW_DOMAINS,
   type PlannedQuery,
-  type StopReason,
 } from "./queries";
 import { runWithLimit } from "./run-with-limit";
 import { getPlanUsage, searchTavily, tavilyResponseSchema } from "./tavily";
