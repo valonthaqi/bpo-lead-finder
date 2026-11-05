@@ -91,6 +91,41 @@ function extractEmails(mailtoLinks: string[], text: string) {
   return [...new Set(companyEmails)];
 }
 
+type PageLink = { href: string; label: string };
+
+function extractSocialLinks(links: PageLink[]) {
+  const socialLinks = links
+    .map(({ href }) => href.match(COMPANY_SOCIAL_PATTERN)?.[0])
+    .filter((link) => link !== undefined);
+  return [...new Set(socialLinks)];
+}
+
+function toAbsoluteUrl(href: string, pageUrl: string) {
+  try {
+    return new URL(href, pageUrl);
+  } catch {
+    return null;
+  }
+}
+
+function extractContactLinks(
+  links: PageLink[],
+  pageUrl: string,
+  rootDomain: string,
+) {
+  const contactLinks = links
+    .filter(({ href, label }) => CONTACT_LINK_PATTERN.test(`${href} ${label}`))
+    .map(({ href }) => toAbsoluteUrl(href, pageUrl))
+    .filter((link) => link !== null)
+    .filter((link) => link.protocol === "https:" || link.protocol === "http:")
+    .filter(
+      (link) => getRootDomain(normalizeDomain(link.href) ?? "") === rootDomain,
+    )
+    .map((link) => link.origin + link.pathname)
+    .filter((link) => link !== pageUrl);
+  return [...new Set(contactLinks)].slice(0, MAX_CONTACT_LINKS);
+}
+
 export function extractPage(
   html: string,
   url: string,
@@ -101,7 +136,7 @@ export function extractPage(
 
   const title = cleanText($("title").first().text()).trim();
   const siteName = $('meta[property="og:site_name"]').attr("content");
-  const hrefs = $("a[href]")
+  const links = $("a[href]")
     .map((_, link) => ({
       href: $(link).attr("href") ?? "",
       label: $(link).text(),
@@ -111,33 +146,12 @@ export function extractPage(
   $("script, style, noscript, svg").remove();
   const text = $("body").text().replace(/\s+/g, " ").trim();
 
-  const telLinks = hrefs
+  const telLinks = links
     .filter(({ href }) => href.startsWith("tel:"))
     .map(({ href }) => href.slice("tel:".length));
-  const mailtoLinks = hrefs
+  const mailtoLinks = links
     .filter(({ href }) => href.startsWith("mailto:"))
     .map(({ href }) => href.slice("mailto:".length).split("?")[0]);
-
-  const socialLinks = hrefs
-    .map(({ href }) => href.match(COMPANY_SOCIAL_PATTERN)?.[0])
-    .filter((link) => link !== undefined);
-
-  const contactLinks = hrefs
-    .filter(({ href, label }) => CONTACT_LINK_PATTERN.test(`${href} ${label}`))
-    .map(({ href }) => {
-      try {
-        return new URL(href, url);
-      } catch {
-        return null;
-      }
-    })
-    .filter((link) => link !== null)
-    .filter((link) => link.protocol === "https:" || link.protocol === "http:")
-    .filter(
-      (link) => getRootDomain(normalizeDomain(link.href) ?? "") === rootDomain,
-    )
-    .map((link) => link.origin + link.pathname)
-    .filter((link) => link !== url);
 
   return {
     url,
@@ -149,7 +163,7 @@ export function extractPage(
     address:
       cleanText($("address").first().text()).replace(/\s+/g, " ").trim() ||
       null,
-    socialLinks: [...new Set(socialLinks)],
-    contactLinks: [...new Set(contactLinks)].slice(0, MAX_CONTACT_LINKS),
+    socialLinks: extractSocialLinks(links),
+    contactLinks: extractContactLinks(links, url, rootDomain),
   };
 }
