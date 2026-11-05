@@ -43,4 +43,5 @@ npm run lint        # ESLint
 npm run typecheck   # TypeScript
 npm run format      # Prettier
 npm test            # unit tests
+npm run check       # all checks and the build, stops at the first failure
 ```
