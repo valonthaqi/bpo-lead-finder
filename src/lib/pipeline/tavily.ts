@@ -83,7 +83,7 @@ export async function searchTavily(
   }
 }
 
-export async function getRemainingCredits(apiKey: string) {
+export async function getPlanUsage(apiKey: string) {
   const response = await fetch(USAGE_URL, {
     headers: { Authorization: `Bearer ${apiKey}` },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -92,5 +92,5 @@ export async function getRemainingCredits(apiKey: string) {
     throw new Error(`Tavily usage check returned ${response.status}`);
   }
   const { account } = usageSchema.parse(await response.json());
-  return account.plan_limit - account.plan_usage;
+  return { planLimit: account.plan_limit, planUsage: account.plan_usage };
 }

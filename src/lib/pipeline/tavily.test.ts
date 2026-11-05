@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getRemainingCredits, searchTavily } from "./tavily";
+import { getPlanUsage, searchTavily } from "./tavily";
 
 const request = {
   query: "final expense call center Pakistan",
@@ -66,16 +66,19 @@ describe("searchTavily", () => {
   });
 });
 
-describe("getRemainingCredits", () => {
-  it("subtracts plan usage from the plan limit", async () => {
+describe("getPlanUsage", () => {
+  it("returns the plan limit and usage", async () => {
     stubFetch(
       Response.json({ account: { plan_usage: 150, plan_limit: 1000 } }),
     );
-    expect(await getRemainingCredits("key")).toBe(850);
+    expect(await getPlanUsage("key")).toEqual({
+      planLimit: 1000,
+      planUsage: 150,
+    });
   });
 
   it("throws when the check fails", async () => {
     stubFetch(new Response(null, { status: 401 }));
-    await expect(getRemainingCredits("key")).rejects.toThrow("401");
+    await expect(getPlanUsage("key")).rejects.toThrow("401");
   });
 });

@@ -4,7 +4,7 @@ import { searches } from "../db/schema";
 import { discover, type DiscoverResult } from "./discover";
 
 export function describeOutcome(result: DiscoverResult) {
-  const found = `${result.domainsFound} domains found using ${result.creditsUsed} new credits.`;
+  const found = `${result.domainsFound} candidate domains found using ${result.creditsUsed} new credits.`;
   switch (result.stopReason) {
     case "credit_cap":
       return `Stopped at this search's credit cap: ${found}`;

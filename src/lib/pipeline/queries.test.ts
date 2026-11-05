@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildQueries, buildQueryKey, getStopReason } from "./queries";
+import {
+  buildQueries,
+  buildQueryKey,
+  getCreditsRemaining,
+  getStopReason,
+} from "./queries";
 
 const filters = {
   countryId: "pakistan",
@@ -28,6 +33,15 @@ describe("buildQueries", () => {
     );
   });
 
+  it("starts ACA with a clear term and Spanish with a Spanish phrase", () => {
+    const [first] = buildQueries({
+      countryId: "colombia",
+      marketId: "spanish",
+      campaignId: "aca",
+    });
+    expect(first.text).toBe("Obamacare centro de llamadas Colombia");
+  });
+
   it("never plans the same query twice", () => {
     const keys = buildQueries(filters).map((query) => query.key);
     expect(new Set(keys).size).toBe(keys.length);
@@ -40,7 +54,7 @@ describe("buildQueries", () => {
       (query) => query.source === "directories",
     );
     expect(web).toHaveLength(4 * 8 * 6);
-    expect(directories).toHaveLength(12);
+    expect(directories).toHaveLength(2);
   });
 
   it("does not plan queries for disabled sources", () => {
@@ -56,6 +70,28 @@ describe("buildQueries", () => {
     expect(() =>
       buildQueries({ ...filters, countryId: "atlantis" as "pakistan" }),
     ).toThrow("Unknown filter value");
+  });
+});
+
+describe("getCreditsRemaining", () => {
+  it("uses the local tally when Tavily's usage is behind", () => {
+    expect(
+      getCreditsRemaining({
+        planLimit: 1000,
+        planUsage: 0,
+        localCreditsUsed: 33,
+      }),
+    ).toBe(967);
+  });
+
+  it("uses Tavily's usage when credits were spent outside this app", () => {
+    expect(
+      getCreditsRemaining({
+        planLimit: 1000,
+        planUsage: 50,
+        localCreditsUsed: 33,
+      }),
+    ).toBe(950);
   });
 });
 

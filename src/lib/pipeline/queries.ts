@@ -63,6 +63,16 @@ export function buildQueries(filters: Filters): PlannedQuery[] {
   }));
 }
 
+export function getCreditsRemaining(credits: {
+  planLimit: number;
+  planUsage: number;
+  localCreditsUsed: number;
+}) {
+  return (
+    credits.planLimit - Math.max(credits.planUsage, credits.localCreditsUsed)
+  );
+}
+
 export function getStopReason(state: {
   creditsUsed: number;
   creditCap: number;

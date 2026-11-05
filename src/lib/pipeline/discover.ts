@@ -1,16 +1,21 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import { searches, searchQueries } from "../db/schema";
 import { readEnv } from "../env";
 import { filtersSchema } from "../filters";
-import { DISABLED_DOMAINS, SOURCES } from "../sources";
-import { normalizeDomain } from "./normalize";
-import { buildQueries, getStopReason, type StopReason } from "./queries";
 import {
-  getRemainingCredits,
-  searchTavily,
-  tavilyResponseSchema,
-} from "./tavily";
+  isCandidateDomain,
+  SEARCH_EXCLUDED_DOMAINS,
+  SOURCES,
+} from "../sources";
+import { normalizeDomain } from "./normalize";
+import {
+  buildQueries,
+  getCreditsRemaining,
+  getStopReason,
+  type StopReason,
+} from "./queries";
+import { getPlanUsage, searchTavily, tavilyResponseSchema } from "./tavily";
 
 export type Candidate = {
   url: string;
@@ -31,8 +36,18 @@ function buildTavilyDomains(sourceId: string) {
   const source = SOURCES.find((item) => item.id === sourceId);
   return {
     includeDomains: source?.domains ?? [],
-    excludeDomains: DISABLED_DOMAINS,
+    excludeDomains: SEARCH_EXCLUDED_DOMAINS,
   };
+}
+
+async function getLocalCreditsUsedThisMonth() {
+  const [{ total }] = await db
+    .select({
+      total: sql<number>`coalesce(sum(${searchQueries.creditsCharged}), 0)::int`,
+    })
+    .from(searchQueries)
+    .where(gte(searchQueries.createdAt, sql`date_trunc('month', now())`));
+  return total;
 }
 
 export async function discover(searchId: number): Promise<DiscoverResult> {
@@ -63,7 +78,10 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
       .map((row) => [row.key, row.rawResponse]),
   );
 
-  let creditsRemaining = await getRemainingCredits(apiKey);
+  let creditsRemaining = getCreditsRemaining({
+    ...(await getPlanUsage(apiKey)),
+    localCreditsUsed: await getLocalCreditsUsedThisMonth(),
+  });
   let creditsUsed = 0;
   let queriesDone = 0;
   let queriesWithoutNewDomains = 0;
@@ -137,7 +155,7 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
     const domainCountBefore = domains.size;
     for (const result of tavilyResponseSchema.parse(raw).results) {
       const domain = normalizeDomain(result.url);
-      if (!domain) continue;
+      if (!domain || !isCandidateDomain(domain)) continue;
       domains.add(domain);
       candidates.push({
         url: result.url,
@@ -147,8 +165,11 @@ export async function discover(searchId: number): Promise<DiscoverResult> {
         source: query.source,
       });
     }
-    queriesWithoutNewDomains =
-      domains.size > domainCountBefore ? 0 : queriesWithoutNewDomains + 1;
+    const source = SOURCES.find((item) => item.id === query.source);
+    if (source?.countsForEarlyStop) {
+      queriesWithoutNewDomains =
+        domains.size > domainCountBefore ? 0 : queriesWithoutNewDomains + 1;
+    }
     queriesDone += 1;
 
     await db

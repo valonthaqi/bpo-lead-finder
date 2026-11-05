@@ -72,12 +72,12 @@ export const MARKETS = [
     id: "spanish",
     name: "Spanish market",
     servicePhrases: [
+      "centro de llamadas",
+      "call center bilingüe",
+      "centro de contacto",
+      "agentes en español call center",
       "call center",
       "BPO",
-      "centro de llamadas",
-      "centro de contacto",
-      "call center bilingüe",
-      "agentes en español call center",
     ],
   },
 ] as const;
@@ -97,10 +97,10 @@ export const CAMPAIGNS = [
     id: "aca",
     name: "ACA (Obamacare)",
     searchTerms: [
-      "ACA",
       "Obamacare",
       "ACA health insurance",
       "Affordable Care Act",
+      "ACA",
     ],
   },
   {

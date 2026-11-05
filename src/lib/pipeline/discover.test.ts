@@ -42,7 +42,7 @@ function stubTavily({ creditsLeft = 500, searchResponse }: TavilyStub = {}) {
     vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith("/usage")) {
         return Response.json({
-          account: { plan_usage: 1000 - creditsLeft, plan_limit: 1000 },
+          account: { plan_usage: 0, plan_limit: creditsLeft },
         });
       }
       const body = JSON.parse(String(init?.body));
@@ -133,6 +133,39 @@ describe("runSearch", () => {
     expect(search.status).toBe("stopped_budget");
   });
 
+  it("counts its own spending when Tavily's usage is behind", async () => {
+    const queries = stubTavily({ creditsLeft: 2 });
+    await runNewSearch(2);
+
+    const search = await runNewSearch(100);
+
+    expect(queries).toHaveLength(2);
+    expect(search.creditsUsed).toBe(0);
+    expect(search.message).toContain("monthly Tavily credits");
+  });
+
+  it("keeps raw job board results but not as candidates", async () => {
+    stubTavily({
+      searchResponse: () =>
+        Response.json({
+          results: [
+            {
+              url: "https://pk.indeed.com/job/1",
+              title: "Closer at Axxon BPO",
+            },
+            { url: "https://zardsbpo.com", title: "Zards BPO" },
+          ],
+        }),
+    });
+
+    const search = await runNewSearch(1);
+
+    expect(search.domainsFound).toBe(1);
+    const db = testDb.current as ReturnType<typeof drizzle>;
+    const [row] = await db.select().from(searchQueries);
+    expect(JSON.stringify(row.rawResponse)).toContain("Axxon BPO");
+  });
+
   it("stops cleanly when Tavily reports the plan limit", async () => {
     const queries = stubTavily({
       searchResponse: (query, callNumber) =>
@@ -156,7 +189,10 @@ describe("runSearch", () => {
 
     const search = await runNewSearch(100);
 
-    expect(queries).toHaveLength(16);
+    expect(queries.filter((query) => query.endsWith("web"))).toHaveLength(16);
+    expect(
+      queries.filter((query) => query.endsWith("directories")),
+    ).toHaveLength(2);
     expect(search.status).toBe("completed");
     expect(search.message).toContain("no new domains");
   });
