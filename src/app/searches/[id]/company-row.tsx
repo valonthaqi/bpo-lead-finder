@@ -29,13 +29,16 @@ export function CompanyRow({ company }: { company: Company }) {
               </span>
             ))}
           </p>
+          <div className="mt-1 sm:hidden">
+            <FitBadge label={company.fitLabel} score={company.score} />
+          </div>
           {company.isPreliminary && (
             <Badge variant="outline" className="mt-1">
               Preliminary
             </Badge>
           )}
         </TableCell>
-        <TableCell>
+        <TableCell className="hidden sm:table-cell">
           <FitBadge label={company.fitLabel} score={company.score} />
         </TableCell>
         <TableCell className="hidden whitespace-normal md:table-cell">
@@ -43,7 +46,7 @@ export function CompanyRow({ company }: { company: Company }) {
         </TableCell>
         <TableCell className="hidden whitespace-normal lg:table-cell">
           <p>{company.phones[0] ?? "Not found"}</p>
-          <p className="break-all text-muted-foreground">
+          <p className="wrap-anywhere text-muted-foreground">
             {company.emails[0] ?? "Not found"}
           </p>
         </TableCell>

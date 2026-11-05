@@ -9,7 +9,7 @@ export function ExternalLink({ url, label }: { url: string; label: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="break-all text-primary hover:underline"
+      className="wrap-anywhere text-primary hover:underline"
     >
       {label}
     </a>

@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={geist.variable}>
+    <html lang="en" className={`bg-background ${geist.variable}`}>
       <body className="min-h-screen bg-muted/40 font-sans">
         <SiteHeader />
         <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">{children}</main>

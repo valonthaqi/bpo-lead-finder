@@ -52,7 +52,7 @@ export function ResultsTable({
           <TableHeader>
             <TableRow>
               <TableHead>Company</TableHead>
-              <TableHead>Fit</TableHead>
+              <TableHead className="hidden sm:table-cell">Fit</TableHead>
               <TableHead className="hidden md:table-cell">Works on</TableHead>
               <TableHead className="hidden lg:table-cell">Contact</TableHead>
               <TableHead>

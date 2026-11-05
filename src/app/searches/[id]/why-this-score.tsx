@@ -17,7 +17,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="break-words">{value}</dd>
+      <dd className="wrap-anywhere">{value}</dd>
     </div>
   );
 }
@@ -38,7 +38,7 @@ export function WhyThisScore({ company }: { company: Company }) {
               </span>
               <div className="min-w-0">
                 <p className="font-medium">{reason.label}</p>
-                <p className="break-words text-muted-foreground">
+                <p className="wrap-anywhere text-muted-foreground">
                   “{reason.evidence}”{" "}
                   {reason.url && (
                     <ExternalLink url={reason.url} label="source" />
@@ -88,7 +88,7 @@ export function WhyThisScore({ company }: { company: Company }) {
           <h4 className="font-medium">Sources</h4>
           <ul className="mt-2 space-y-1">
             {company.sources.map((source) => (
-              <li key={source.url} className="break-words">
+              <li key={source.url} className="wrap-anywhere">
                 {SOURCE_NAMES[source.source]}:{" "}
                 <ExternalLink url={source.url} label={source.url} />
               </li>
