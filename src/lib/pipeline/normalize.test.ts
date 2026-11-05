@@ -54,6 +54,29 @@ describe("normalizePhone", () => {
     );
   });
 
+  it("reads a US toll-free number as US, not as the selected country", () => {
+    expect(normalizePhone("888.766.4482", "PK")).toBe("+18887664482");
+    expect(normalizePhone("(866) 728-0264", "CO")).toBe("+18667280264");
+    expect(normalizePhone("1.888.420.3282", "CO")).toBe("+18884203282");
+  });
+
+  it("reads an unprefixed US number as US where local numbers start with 0", () => {
+    expect(normalizePhone("(817) 900-8030", "PK")).toBe("+18179008030");
+  });
+
+  it("keeps a Pakistani mobile written without its leading zero", () => {
+    expect(normalizePhone("300 1234567", "PK")).toBe("+923001234567");
+  });
+
+  it("keeps a Colombian mobile that also looks like a US number", () => {
+    expect(normalizePhone("304 450 8102", "CO")).toBe("+573044508102");
+  });
+
+  it("trusts an explicit country code", () => {
+    expect(normalizePhone("+1 470 767 3784", "CO")).toBe("+14707673784");
+    expect(normalizePhone("+57 304 450 8102", "PK")).toBe("+573044508102");
+  });
+
   it("returns null for an invalid number", () => {
     expect(normalizePhone("12345", "PK")).toBeNull();
   });

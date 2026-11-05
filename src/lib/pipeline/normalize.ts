@@ -19,6 +19,16 @@ const LEGAL_WORDS = new Set([
   "the",
 ]);
 
+const US_TOLL_FREE = /^1?(800|833|844|855|866|877|888)\d{7}$/;
+const WRITTEN_WITH_PREFIX = /^\s*(\+|00|0)/;
+const COUNTRIES_DIALING_LOCALLY_WITH_ZERO = new Set([
+  "BD",
+  "IN",
+  "PH",
+  "PK",
+  "ZA",
+]);
+
 const TWO_PART_SUFFIX = /\.(com|co|org|net|gov|edu|ac|go|ne|or)\.[a-z]{2}$/;
 
 export function normalizeDomain(url: string): string | null {
@@ -34,7 +44,19 @@ export function getRootDomain(domain: string) {
   return domain.split(".").slice(-labelsToKeep).join(".");
 }
 
+function looksLikeUsNumber(phone: string, countryCode: CountryCode) {
+  if (WRITTEN_WITH_PREFIX.test(phone)) return false;
+  if (!parsePhoneNumberFromString(phone, "US")?.isValid()) return false;
+  return (
+    US_TOLL_FREE.test(phone.replace(/\D/g, "")) ||
+    COUNTRIES_DIALING_LOCALLY_WITH_ZERO.has(countryCode)
+  );
+}
+
 export function normalizePhone(phone: string, countryCode: CountryCode) {
+  if (looksLikeUsNumber(phone, countryCode)) {
+    return parsePhoneNumberFromString(phone, "US")?.number ?? null;
+  }
   const parsed = parsePhoneNumberFromString(phone, countryCode);
   return parsed?.isValid() ? parsed.number : null;
 }

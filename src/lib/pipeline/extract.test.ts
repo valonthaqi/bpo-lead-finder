@@ -71,6 +71,15 @@ describe("extractPage", () => {
     expect(page.phones).toEqual(["+923001234567"]);
   });
 
+  it("does not turn a US number on the page into a local one", () => {
+    const usNumber = extractPage(
+      "<title>Home</title><p>Call 888.766.4482 today</p>",
+      "https://a.com/",
+      "PK",
+    );
+    expect(usNumber.phones).toEqual(["+18887664482"]);
+  });
+
   it("keeps company emails and drops personal ones", () => {
     expect(page.emails.sort()).toEqual([
       "contact@zardsbpo.com",

@@ -68,9 +68,11 @@ function extractPhones(
   const fromLinks = telLinks
     .map((phone) => normalizePhone(phone, countryCode))
     .filter((phone) => phone !== null);
-  const fromText = findPhoneNumbersInText(text, countryCode).map(
-    (found) => found.number.number,
-  );
+  const fromText = findPhoneNumbersInText(text, countryCode)
+    .map((found) =>
+      normalizePhone(text.slice(found.startsAt, found.endsAt), countryCode),
+    )
+    .filter((phone) => phone !== null);
   return [...new Set([...fromLinks, ...fromText])].slice(0, MAX_PHONES);
 }
 
