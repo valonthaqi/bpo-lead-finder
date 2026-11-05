@@ -62,3 +62,23 @@ The company hasn't answered whether reaching social platforms through a search A
 ## 2026-11-05: Search credits are a hard budget
 
 Tavily's free plan is 1,000 credits a month, with no card, no pagination and at most 20 results per query. So each search runs many query variations, every raw result is stored, the same query never runs twice, a per-search credit cap lives in settings, and a search stops with a clear message when the budget runs out.
+
+## 2026-11-05: Dropped abstractions that weren't needed
+
+- **Search provider interface:** there is one provider, so `discover` calls a plain Tavily client. `SEARCH_PROVIDER` is gone.
+- **Source adapters:** a source is an entry in a list with domains to include or exclude. Enabling a social platform later means changing a flag.
+- **A table linking searches to queries:** query plans are repeatable, so a new run rebuilds the list and finds stored results by key.
+- **A monthly budget setting and local tally:** Tavily's usage endpoint reports what's actually left, including use outside this app, and status 432 is the backstop.
+- **Automatic resume and heartbeat:** a search left running after a restart is marked `interrupted`, and "Run again" reuses stored queries for free.
+
+## 2026-11-05: A credit is counted before the request is sent
+
+Tavily's docs don't say whether a failed search is charged, so each attempt is recorded first. If the process dies mid-request, the attempt has still been counted. A query only counts as stored once a valid response is saved, so a failed one can be retried.
+
+## 2026-11-05: One Tavily error fails the search
+
+Anything other than a rate limit or the plan limit stops the search with a clear message, rather than spending more credits against a service that's failing. "Run again" continues from the stored queries.
+
+## 2026-11-05: PGlite for testing the credit logic
+
+The rules that spend credits run against real Postgres in memory with a fake Tavily, so the tests use the same SQL and migration as the app and can't spend a real credit. It's a dev-only dependency.
