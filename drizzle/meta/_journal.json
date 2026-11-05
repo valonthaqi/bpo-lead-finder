@@ -8,6 +8,13 @@
       "when": 1793900582166,
       "tag": "0000_typical_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793905306594,
+      "tag": "0001_small_vulture",
+      "breakpoints": true
     }
   ]
 }

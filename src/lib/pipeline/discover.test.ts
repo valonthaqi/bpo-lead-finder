@@ -1,9 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { PGlite } from "@electric-sql/pglite";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/pglite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { searches, searchQueries } from "../db/schema";
+import { createTestDb } from "../db/test-db";
 import type { Filters } from "../filters";
 
 const testDb = vi.hoisted(() => ({ current: null as unknown }));
@@ -40,6 +38,9 @@ function stubTavily({ creditsLeft = 500, searchResponse }: TavilyStub = {}) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
+      if (!url.startsWith("https://api.tavily.com")) {
+        return new Response(null, { status: 404 });
+      }
       if (url.endsWith("/usage")) {
         return Response.json({
           account: { plan_usage: 0, plan_limit: creditsLeft },
@@ -57,7 +58,7 @@ function stubTavily({ creditsLeft = 500, searchResponse }: TavilyStub = {}) {
 async function runNewSearch(creditCap: number) {
   const { id } = await createSearch(filters, creditCap);
   await runSearch(id);
-  const db = testDb.current as ReturnType<typeof drizzle>;
+  const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
   const [search] = await db.select().from(searches).where(eq(searches.id, id));
   return search;
 }
@@ -65,13 +66,7 @@ async function runNewSearch(creditCap: number) {
 beforeEach(async () => {
   vi.stubEnv("DATABASE_URL", "postgresql://unused");
   vi.stubEnv("SEARCH_API_KEY", "tvly-test");
-  const pglite = new PGlite();
-  for (const file of readdirSync("drizzle").filter((name) =>
-    name.endsWith(".sql"),
-  )) {
-    await pglite.exec(readFileSync(`drizzle/${file}`, "utf8"));
-  }
-  testDb.current = drizzle(pglite);
+  testDb.current = await createTestDb();
 });
 
 describe("runSearch", () => {
@@ -86,7 +81,7 @@ describe("runSearch", () => {
     expect(search.domainsFound).toBe(3);
     expect(search.message).toContain("credit cap");
 
-    const db = testDb.current as ReturnType<typeof drizzle>;
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
     const rows = await db.select().from(searchQueries);
     expect(rows).toHaveLength(3);
     expect(rows.every((row) => row.status === "done")).toBe(true);
@@ -139,7 +134,7 @@ describe("runSearch", () => {
     });
     await runNewSearch(1);
 
-    const db = testDb.current as ReturnType<typeof drizzle>;
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
     const [row] = await db.select().from(searchQueries);
     expect(row.status).toBe("empty");
 
@@ -175,7 +170,7 @@ describe("runSearch", () => {
     const search = await runNewSearch(1);
 
     expect(search.domainsFound).toBe(1);
-    const db = testDb.current as ReturnType<typeof drizzle>;
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
     const [row] = await db.select().from(searchQueries);
     expect(JSON.stringify(row.rawResponse)).toContain("Axxon BPO");
   });
@@ -228,7 +223,7 @@ describe("runSearch", () => {
     expect(queries[1]).toBe(queries[0]);
     expect(retried.domainsFound).toBe(1);
 
-    const db = testDb.current as ReturnType<typeof drizzle>;
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
     const rows = await db.select().from(searchQueries);
     expect(rows[0].creditsCharged).toBe(2);
   });

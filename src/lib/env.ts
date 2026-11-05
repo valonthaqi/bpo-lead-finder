@@ -7,6 +7,7 @@ const envSchema = z.object({
   SEARCH_API_KEY: z
     .string({ error: "SEARCH_API_KEY is missing" })
     .startsWith("tvly-", "SEARCH_API_KEY must start with tvly-"),
+  FETCH_USER_AGENT: z.string().default("bpo-lead-finder/0.1"),
 });
 
 export function readEnv() {
