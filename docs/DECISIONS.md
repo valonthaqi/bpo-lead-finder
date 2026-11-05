@@ -153,3 +153,7 @@ Company names and addresses come from public websites, so a cell starting with `
 ## 2026-11-05: Types that work on a fresh clone
 
 Next's generated `PageProps` and `LayoutProps` only exist after a build, which made type checking fail on a fresh clone. Pages use explicit types instead.
+
+## 2026-11-05: Stored search results no longer belong to a search
+
+`search_queries.search_id` was written but never read, and it stopped old searches from being deleted. Stored results are shared across searches through their query key, so the column was removed.
