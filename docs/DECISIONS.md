@@ -103,3 +103,31 @@ The rules that spend credits run against real Postgres in memory with a fake Tav
 - Spanish-first queries did worse for Colombia: 15 credits added 1 or 2 likely call centers, because they surface consumer pages from insurers and news sites. The earlier 10 credits with English terms found about 7.
 - A fixed blocklist can't keep up with new job boards. Tested offline on stored results, requiring call-center words in the title, snippet or domain reduces candidates from 126 to 75 and from 125 to 29. It lost a few real companies, and let through some pages that merely mention a call center, so it can only be a first pass.
 - At this rate 100 credits would give about 40 to 70 likely call centers for Pakistan, and fewer for Colombia.
+
+## 2026-11-05: Short exclude list confirmed
+
+Three queries that came back empty with the 28-domain exclude list returned 19 to 20 results each with only the 3 disabled sources excluded. Noise is now filtered locally only.
+
+## 2026-11-05: Query tuning paused until scoring is reviewed
+
+English call center terms come first for every market, and burial and funeral terms moved lower. These orders haven't been measured yet, because no credits have been spent since the change.
+
+## 2026-11-05: Full pipeline results
+
+Using stored search results and no new credits:
+
+| Search                  | Sites read | Companies | Strong | Possible | Low |
+| ----------------------- | ---------- | --------- | ------ | -------- | --- |
+| Pakistan, final expense | 77         | 77        | 21     | 25       | 31  |
+| Colombia, Spanish, ACA  | 30         | 30        | 4      | 10       | 16  |
+
+- About 13 of 105 sites couldn't be read. Those companies are scored from search snippets, and the reasons say so.
+- Reading the names by hand, about two thirds of Pakistan's strong fits look like real offshore call centers. Most of the others look like US lead sellers or calling-software vendors, which the rules don't separate yet.
+- Fetching took about 2 seconds per site, so 1,000 sites would take around 35 minutes. That supports the background job.
+
+## 2026-11-05: Choices in the scoring design
+
+- **Rules and disqualifiers live in `scoring-rules.ts`,** so the company's answer on disqualifiers changes data, not logic.
+- **Companies are stored per search,** with their reasons and sources as columns. A separate sources table wasn't needed.
+- **Only role-based emails are kept,** like `info@` or `sales@`, because a name in an address could be a person's.
+- **Page text is stored, not HTML,** capped at 20 KB per page, at most 3 pages per domain, to stay well inside the free database size. The database is 13 MB so far.

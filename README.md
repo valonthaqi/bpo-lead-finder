@@ -4,7 +4,7 @@ A prospecting tool for finding offshore BPO call centers that run US insurance c
 
 Pick a country, a language or market, and a campaign type. The app searches multiple public sources and returns a ranked list of matching call centers with their public business contact details, what they appear to work on, where each detail came from, and a fit score with the reasons behind it. Results can be exported as CSV.
 
-> Status: early development. The project is set up; the search pipeline isn't built yet.
+> Status: the search pipeline works from the terminal. The web interface is next.
 
 ## Run it locally
 
@@ -44,4 +44,5 @@ npm run typecheck   # TypeScript
 npm run format      # Prettier
 npm test            # unit tests
 npm run check       # all checks and the build, stops at the first failure
+npm run search -- --country pakistan --campaign final-expense --cap 0   # terminal search, --cap sets the credits it may spend
 ```
