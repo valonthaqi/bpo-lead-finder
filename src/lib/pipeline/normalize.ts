@@ -19,7 +19,7 @@ const LEGAL_WORDS = new Set([
   "the",
 ]);
 
-const TWO_PART_SUFFIX = /\.(com|co|org|net|gov|edu|ac)\.[a-z]{2}$/;
+const TWO_PART_SUFFIX = /\.(com|co|org|net|gov|edu|ac|go|ne|or)\.[a-z]{2}$/;
 
 export function normalizeDomain(url: string): string | null {
   try {

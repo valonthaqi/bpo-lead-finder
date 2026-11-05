@@ -34,6 +34,10 @@ describe("getRootDomain", () => {
     expect(getRootDomain("jobs.statelife.com.pk")).toBe("statelife.com.pk");
   });
 
+  it("keeps less common country suffixes with two parts", () => {
+    expect(getRootDomain("nru.uncst.go.ug")).toBe("uncst.go.ug");
+  });
+
   it("leaves a single-part country suffix alone", () => {
     expect(getRootDomain("roboconnect.pk")).toBe("roboconnect.pk");
   });
