@@ -261,3 +261,13 @@ Admins choose the first password, so everyone can replace it on an Account page,
 - **The same rule guards direct links.** The results page, the progress API and the CSV export answer "not found" for someone else's search, so a guessed `/searches/123` URL reveals nothing, including that the search exists. The rule is one pure function, `canViewSearch`, with unit tests.
 - **The viewer comes from the login token** (`getClaims`), not a fresh lookup. The progress panel polls every 2.5 seconds, and a network call to Supabase on each poll isn't worth it. The owner role can't be removed from the app, so a stale token can't widen access.
 - **Still shared by everyone:** the one-search-at-a-time limit, the credit settings, and the cache of stored queries and pages. Stored results are reused across people, which saves credits.
+
+## 2026-11-09: Deployed on Render's free plan
+
+This answers the open "public URL?" question.
+
+- **Render, not Vercel.** Searches run as a background job inside the server process (`void runSearch(id)`). Serverless hosts freeze the process once the response is sent, and each new instance would mark running searches as interrupted. Render's free web service is a normal, always-running Node process, needs no card, and deploys from GitHub.
+- **Frankfurt region,** the closest Render region to the Supabase database in `eu-west-1`.
+- **`render.yaml` describes the service,** so the setup lives in the repo. Settings with secrets are marked `sync: false`, so Render asks for them in its dashboard and they never enter the repo.
+- **The health check uses `/login`,** because every other page redirects signed-out visitors.
+- **Known cost of the free plan:** the service sleeps after 15 minutes without visitors. The progress page polls while someone watches a search, which keeps it awake. A search cut off by sleeping shows "Run again", which reuses stored results for free.

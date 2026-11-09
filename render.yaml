@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: bpo-lead-finder
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: FETCH_USER_AGENT
+        value: bpo-lead-finder/0.1
+      - key: DATABASE_URL
+        sync: false
+      - key: SEARCH_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
