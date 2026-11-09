@@ -1,10 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { readSupabaseAdminEnv } from "../src/lib/env";
+import { readRole } from "../src/lib/roles";
 
 async function main() {
   const email = process.argv[2]?.trim().toLowerCase();
   if (!email) {
-    throw new Error("Usage: npm run users:make-admin -- you@example.com");
+    throw new Error("Usage: npm run users:make-owner -- you@example.com");
   }
 
   const env = readSupabaseAdminEnv();
@@ -26,14 +27,24 @@ async function main() {
     );
   }
 
+  const otherOwner = data.users.find(
+    (candidate) =>
+      candidate.id !== user.id && readRole(candidate.app_metadata) === "owner",
+  );
+  if (otherOwner) {
+    throw new Error(
+      `${otherOwner.email} is already the owner. There can only be one.`,
+    );
+  }
+
   const { error: updateError } = await supabase.auth.admin.updateUserById(
     user.id,
-    { app_metadata: { role: "admin" } },
+    { app_metadata: { ...user.app_metadata, role: "owner" } },
   );
   if (updateError) throw updateError;
 
   console.log(
-    `${email} is now an admin. Sign out and back in to see the Users page.`,
+    `${email} is now the owner. Sign out and back in to see everyone on the Users page.`,
   );
 }
 

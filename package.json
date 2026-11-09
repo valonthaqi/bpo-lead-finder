@@ -14,7 +14,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "check:env": "tsx --env-file-if-exists=.env.local scripts/check-env.ts",
-    "users:make-admin": "tsx --env-file-if-exists=.env.local scripts/make-admin.ts",
+    "users:make-owner": "tsx --env-file-if-exists=.env.local scripts/make-owner.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
