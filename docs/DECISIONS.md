@@ -202,3 +202,10 @@ shadcn/ui copies its components into `src/components/ui`, so there is no hosted 
 - **The progress bar shows websites read.** During the search stage the total depends on the credit cap and early stop, so it shows an animated placeholder instead of a misleading percentage.
 
 Only the interface changed. No pipeline, database, filter, CSV or route file was touched, and all 266 companies in the baseline comparison stayed identical.
+
+## 2026-11-09: Theme toggle and more spacing
+
+- **A light and dark toggle in the header** replaces dark mode that only followed the system setting. The first visit still follows the system. After that the choice is saved in `localStorage`. A short script in `<head>` applies the saved theme before the page paints, so it doesn't flash light first. Tailwind's `dark:` variant now follows a `.dark` class instead of the media query, so the existing badge colours needed no changes. No theme library was added because the toggle is about 50 lines.
+- **More room between elements:** wider page padding, larger card padding and titles, taller table rows with uppercase column headers, a full-width table inside its card, and more space in the score panel and progress stats.
+
+Only the interface changed.
