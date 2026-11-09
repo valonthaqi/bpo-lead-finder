@@ -219,3 +219,17 @@ This replaces the "one user, no login" default.
 - **`src/proxy.ts` guards every route.** It refreshes the session cookie, sends signed-out visitors to `/login`, and answers signed-out API calls with a 401 instead of a redirect.
 - **Email confirmation is turned off in the Supabase dashboard,** so a new account can sign in straight away and the free plan's email limit doesn't block the demo. If it's left on, the form says so instead of failing silently.
 - **The public key setting is named `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,** after Supabase's current name, and the app refuses to start if it holds a secret key (`sb_secret_`), because anything named `NEXT_PUBLIC_` is sent to the browser.
+
+## 2026-11-09: Accounts are created by admins in the app
+
+Open signup is gone. Before the app goes online, a stranger must not be able to create an account and spend the Tavily credits. Instead, admins add people on a Users page.
+
+- **Two roles: admin and user.** Both can search and export. Only admins see the Users page, where they add people, change roles and remove people.
+- **The role lives in Supabase's `app_metadata`.** Only the server can write it, with the secret key. `user_metadata` was ruled out because users can edit their own, which would let anyone make themselves an admin. A missing or unknown role counts as a user.
+- **Every admin action checks the role again on the server** with `getUser()`, which asks Supabase for the current record. The header's Users link uses the role in the login token, which can be up to an hour old, but it only decides whether the link shows.
+- **Admins can't change their own role or remove themselves,** so the last admin can't lock everyone out.
+- **The secret key is a server-only setting,** `SUPABASE_SECRET_KEY`. Next.js only sends `NEXT_PUBLIC_` settings to the browser, and the app checks the key has the secret format.
+- **The first admin is made with `npm run users:make-admin -- email`,** a one-off script, because the Users page needs an admin to open it.
+- **Signups are also turned off in Supabase** ("Allow new users to sign up"). Removing the form alone isn't enough, because the publishable key is public and Supabase's signup API could still be called directly.
+- **No password length rule on login.** Passwords are set by an admin, so the form only checks one was entered.
+- **Known limit:** a removed user's login token stays valid until it expires (up to an hour), because the proxy checks the token locally to avoid a network call on every request, including the progress polling.

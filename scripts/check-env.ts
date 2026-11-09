@@ -1,5 +1,5 @@
 import postgres from "postgres";
-import { readEnv, readSupabaseEnv } from "../src/lib/env";
+import { readEnv, readSupabaseAdminEnv, readSupabaseEnv } from "../src/lib/env";
 
 async function main() {
   const env = readEnv();
@@ -10,6 +10,8 @@ async function main() {
   console.log(
     `Supabase Auth URL read: ${supabaseEnv.NEXT_PUBLIC_SUPABASE_URL}`,
   );
+  readSupabaseAdminEnv();
+  console.log("SUPABASE_SECRET_KEY read: format is valid");
 
   const client = postgres(env.DATABASE_URL, { max: 1 });
   await client`select 1`;

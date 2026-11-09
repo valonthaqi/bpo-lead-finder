@@ -42,3 +42,23 @@ export function readSupabaseEnv() {
   }
   return result.data;
 }
+
+const supabaseAdminEnvSchema = supabaseEnvSchema
+  .pick({ NEXT_PUBLIC_SUPABASE_URL: true })
+  .extend({
+    SUPABASE_SECRET_KEY: z
+      .string({ error: "SUPABASE_SECRET_KEY is missing" })
+      .startsWith(
+        "sb_secret_",
+        "SUPABASE_SECRET_KEY must be a secret key starting with sb_secret_",
+      ),
+  });
+
+export function readSupabaseAdminEnv() {
+  const result = supabaseAdminEnvSchema.safeParse(process.env);
+  if (!result.success) {
+    const problems = result.error.issues.map((issue) => issue.message);
+    throw new Error(problems.join(". "));
+  }
+  return result.data;
+}

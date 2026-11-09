@@ -4,34 +4,19 @@ import { redirect } from "next/navigation";
 import { readCredentials } from "@/lib/credentials";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type AuthFormState = { error: string | null };
+export type LoginFormState = { error: string | null; email: string };
 
-export async function authenticate(
-  _previousState: AuthFormState,
+export async function logIn(
+  _previousState: LoginFormState,
   formData: FormData,
-): Promise<AuthFormState> {
+): Promise<LoginFormState> {
+  const email = String(formData.get("email") ?? "");
   const parsed = readCredentials(formData);
-  if ("error" in parsed) return { error: parsed.error };
+  if ("error" in parsed) return { error: parsed.error, email };
 
-  const { email, password, intent } = parsed.credentials;
   const supabase = await createSupabaseServerClient();
-
-  if (intent === "login") {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) return { error: error.message };
-  } else {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
-    if (!data.session) {
-      return {
-        error:
-          "Account created, but Supabase is asking for email confirmation. Turn off Confirm email in the Supabase dashboard, or confirm from your inbox.",
-      };
-    }
-  }
+  const { error } = await supabase.auth.signInWithPassword(parsed.credentials);
+  if (error) return { error: error.message, email };
 
   redirect("/");
 }

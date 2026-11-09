@@ -1,12 +1,12 @@
-import { HeadsetIcon, LogOutIcon } from "lucide-react";
+import { HeadsetIcon, LogOutIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { getSignedInEmail } from "@/lib/supabase/server";
+import { getSignedInUser } from "@/lib/supabase/server";
 
 export async function SiteHeader() {
-  const email = await getSignedInEmail();
+  const user = await getSignedInUser();
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur">
@@ -25,11 +25,19 @@ export async function SiteHeader() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {email && (
+          {user && (
             <>
               <span className="hidden text-sm text-muted-foreground md:inline">
-                {email}
+                {user.email}
               </span>
+              {user.role === "admin" && (
+                <Button variant="outline" asChild>
+                  <Link href="/users">
+                    <UsersIcon aria-hidden="true" />
+                    Users
+                  </Link>
+                </Button>
+              )}
               <form action={signOut}>
                 <Button type="submit" variant="outline">
                   <LogOutIcon aria-hidden="true" />
