@@ -233,3 +233,12 @@ Open signup is gone. Before the app goes online, a stranger must not be able to 
 - **Signups are also turned off in Supabase** ("Allow new users to sign up"). Removing the form alone isn't enough, because the publishable key is public and Supabase's signup API could still be called directly.
 - **No password length rule on login.** Passwords are set by an admin, so the form only checks one was entered.
 - **Known limit:** a removed user's login token stays valid until it expires (up to an hour), because the proxy checks the token locally to avoid a network call on every request, including the progress polling.
+
+## 2026-11-09: People change their own password
+
+Admins choose the first password, so everyone can replace it on an Account page, reached from their email in the header.
+
+- **The current password is required,** and checked by signing in with it again. Supabase's `updateUser` would accept a new password from any logged-in session, so without this check someone at a computer left signed in could lock the owner out. Signing in again also counts as a recent sign-in, so it works even if Supabase's "Secure password change" setting is on.
+- **The new password is typed twice,** must be at least 8 characters (the same rule as when an admin adds someone), and must differ from the current one.
+- **Every other session is signed out afterwards** (`signOut({ scope: "others" })`), so anyone who knew the admin-chosen password loses access. The current session stays signed in.
+- **No email reset link.** "Forgot password" would need Supabase to send email, which the free plan heavily rate-limits. Until then, an admin can remove and re-add someone who forgets theirs.
