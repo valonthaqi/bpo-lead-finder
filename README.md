@@ -18,6 +18,30 @@ npm run dev
 
 Open http://localhost:3000.
 
+## Accounts
+
+There's no public signup. In Supabase, switch off **Authentication → Sign In / Providers → Allow new users to sign up**, add your own account under **Authentication → Users → Add user** (tick **Auto Confirm User**), then make it the owner:
+
+```bash
+npm run users:make-owner -- you@example.com
+```
+
+- **Owner:** one account. Sees everyone and every search, and manages all roles. Nobody can change or remove the owner.
+- **Admin:** adds people on the Users page, and manages only the people they added.
+- **User:** runs searches and exports results.
+
+Everyone sees only their own searches, except the owner, who sees all of them. Everyone can change their password on the Account page.
+
+## Deploy
+
+Searches run in the background inside the server process, so the app needs an always-running Node host. Serverless hosts stop the process after each response. `render.yaml` describes a free [Render](https://render.com) web service:
+
+1. In Render, choose **New → Blueprint** and connect this GitHub repository.
+2. Enter the settings from `.env.example` when Render asks for them. `NEXT_PUBLIC_` settings are needed at build time, so set them before the first deploy.
+3. Every push to `main` deploys again.
+
+The free plan sleeps after 15 minutes without visitors and takes about a minute to wake. A search cut off by a restart or by sleeping shows "Run again", which reuses stored results for free.
+
 ## How it works
 
 The search pipeline is in `src/lib/pipeline/`, with one file per step:
