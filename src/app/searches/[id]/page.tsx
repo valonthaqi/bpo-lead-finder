@@ -29,7 +29,7 @@ export default async function SearchPage({
   const isRunning = isActive(search.status);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <Link
           href="/"
@@ -38,7 +38,7 @@ export default async function SearchPage({
           <ArrowLeftIcon className="size-4" aria-hidden="true" />
           New search
         </Link>
-        <h1 className="mt-1 text-xl font-semibold">
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight">
           {describeFilters(search)}
         </h1>
       </div>

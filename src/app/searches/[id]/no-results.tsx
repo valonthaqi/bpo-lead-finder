@@ -6,7 +6,7 @@ export function NoResults({ isRunning }: { isRunning: boolean }) {
   if (isRunning) {
     return (
       <Card>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Looking for call centers. Results appear here as they&apos;re found.
           </p>
@@ -20,7 +20,7 @@ export function NoResults({ isRunning }: { isRunning: boolean }) {
 
   return (
     <Card>
-      <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
+      <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
         <SearchXIcon
           className="size-6 text-muted-foreground"
           aria-hidden="true"

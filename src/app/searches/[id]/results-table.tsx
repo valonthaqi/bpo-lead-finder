@@ -28,7 +28,7 @@ export function ResultsTable({
 }) {
   return (
     <Card>
-      <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+      <CardHeader className="flex flex-wrap items-center justify-between gap-3">
         <CardTitle>
           <h2>
             {total} companies{isRunning ? " so far" : ""}, best fit first
@@ -41,31 +41,33 @@ export function ResultsTable({
           </a>
         </Button>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-5">
         {rows.some((company) => company.isPreliminary) && (
           <p className="text-sm text-muted-foreground">
             Preliminary rows are scored from search snippets only. Their scores
             update as each website is read.
           </p>
         )}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Company</TableHead>
-              <TableHead className="hidden sm:table-cell">Fit</TableHead>
-              <TableHead className="hidden md:table-cell">Works on</TableHead>
-              <TableHead className="hidden lg:table-cell">Contact</TableHead>
-              <TableHead>
-                <span className="sr-only">Details</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((company) => (
-              <CompanyRow key={company.domains[0]} company={company} />
-            ))}
-          </TableBody>
-        </Table>
+        <div className="-mx-6 border-y [&_td:first-child:not([colspan])]:pl-6 [&_td:last-child:not([colspan])]:pr-6 [&_th:first-child]:pl-6 [&_th:last-child]:pr-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Company</TableHead>
+                <TableHead className="hidden sm:table-cell">Fit</TableHead>
+                <TableHead className="hidden md:table-cell">Works on</TableHead>
+                <TableHead className="hidden lg:table-cell">Contact</TableHead>
+                <TableHead>
+                  <span className="sr-only">Details</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((company) => (
+                <CompanyRow key={company.domains[0]} company={company} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
         <Pagination searchId={searchId} page={page} pageCount={pageCount} />
       </CardContent>
     </Card>

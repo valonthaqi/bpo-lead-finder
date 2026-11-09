@@ -62,7 +62,7 @@ export function SearchForm() {
     <Card>
       <CardHeader>
         <CardTitle>
-          <h1>Find call centers</h1>
+          <h1 className="text-xl">Find call centers</h1>
         </CardTitle>
         <CardDescription>
           Searches public sources for offshore call centers running US insurance
@@ -70,15 +70,15 @@ export function SearchForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid gap-5 sm:grid-cols-3">
             {FIELDS.map((field) => (
-              <div key={field.name} className="space-y-1.5">
+              <div key={field.name} className="space-y-2">
                 <Label htmlFor={field.name}>{field.label}</Label>
                 <NativeSelect
                   id={field.name}
                   name={field.name}
-                  className="w-full"
+                  className="h-10 w-full"
                 >
                   {field.options.map((option) => (
                     <NativeSelectOption key={option.id} value={option.id}>

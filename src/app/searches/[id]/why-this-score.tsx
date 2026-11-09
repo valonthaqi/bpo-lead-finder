@@ -24,10 +24,10 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 export function WhyThisScore({ company }: { company: Company }) {
   return (
-    <div className="grid gap-6 bg-muted/50 p-4 text-sm lg:grid-cols-[2fr_1fr]">
+    <div className="grid gap-8 bg-muted/50 px-6 py-6 text-sm lg:grid-cols-[2fr_1fr]">
       <section className="min-w-0">
         <h4 className="font-medium">Why this score</h4>
-        <ul className="mt-2 space-y-3">
+        <ul className="mt-3 space-y-4">
           {company.reasons.map((reason) => (
             <li key={reason.label} className="flex gap-3">
               <span
@@ -50,10 +50,10 @@ export function WhyThisScore({ company }: { company: Company }) {
         </ul>
       </section>
 
-      <div className="min-w-0 space-y-6">
+      <div className="min-w-0 space-y-8">
         <section>
           <h4 className="font-medium">Contact</h4>
-          <dl className="mt-2 space-y-2">
+          <dl className="mt-3 space-y-3">
             <Detail
               label="Works on"
               value={company.campaigns.join(", ") || "Not clear"}
@@ -86,7 +86,7 @@ export function WhyThisScore({ company }: { company: Company }) {
 
         <section>
           <h4 className="font-medium">Sources</h4>
-          <ul className="mt-2 space-y-1">
+          <ul className="mt-3 space-y-2">
             {company.sources.map((source) => (
               <li key={source.url} className="wrap-anywhere">
                 {SOURCE_NAMES[source.source]}:{" "}
