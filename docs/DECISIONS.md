@@ -252,3 +252,12 @@ Admins choose the first password, so everyone can replace it on an Account page,
 - **Changing a role keeps the rest of `app_metadata`,** including `created_by`, by copying the existing values before setting the new role.
 - **The owner sees an "Added by" column.** Admins don't, since everything they see was added by them.
 - **If an admin is removed,** the people they added stay, and only the owner can see or manage them.
+
+## 2026-11-09: People see only their own searches
+
+- **Each search records who started it** in a new `searches.user_id` column, filled from the signed-in user when the search is created. The migration only adds a column that may be empty, so existing rows and the pipeline are untouched.
+- **The owner sees every search** under "Everyone's recent searches", with the email of whoever ran each one. Searches from before accounts existed show as "Run before accounts existed".
+- **Everyone else, admins included, sees only their own** under "Your recent searches". Admins manage people, not their searches.
+- **The same rule guards direct links.** The results page, the progress API and the CSV export answer "not found" for someone else's search, so a guessed `/searches/123` URL reveals nothing, including that the search exists. The rule is one pure function, `canViewSearch`, with unit tests.
+- **The viewer comes from the login token** (`getClaims`), not a fresh lookup. The progress panel polls every 2.5 seconds, and a network call to Supabase on each poll isn't worth it. The owner role can't be removed from the app, so a stale token can't widen access.
+- **Still shared by everyone:** the one-search-at-a-time limit, the credit settings, and the cache of stored queries and pages. Stored results are reused across people, which saves credits.
