@@ -1,4 +1,9 @@
-import { HeadsetIcon, LogOutIcon, UsersIcon } from "lucide-react";
+import {
+  CircleUserIcon,
+  HeadsetIcon,
+  LogOutIcon,
+  UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -24,24 +29,29 @@ export async function SiteHeader() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {user && (
             <>
-              <span className="hidden text-sm text-muted-foreground md:inline">
-                {user.email}
-              </span>
+              <Button variant="ghost" asChild>
+                <Link href="/account" aria-label="Account" title="Account">
+                  <CircleUserIcon aria-hidden="true" />
+                  <span className="hidden max-w-56 truncate md:inline">
+                    {user.email}
+                  </span>
+                </Link>
+              </Button>
               {user.role === "admin" && (
                 <Button variant="outline" asChild>
-                  <Link href="/users">
+                  <Link href="/users" aria-label="Users">
                     <UsersIcon aria-hidden="true" />
-                    Users
+                    <span className="hidden sm:inline">Users</span>
                   </Link>
                 </Button>
               )}
               <form action={signOut}>
-                <Button type="submit" variant="outline">
+                <Button type="submit" variant="outline" aria-label="Sign out">
                   <LogOutIcon aria-hidden="true" />
-                  Sign out
+                  <span className="hidden sm:inline">Sign out</span>
                 </Button>
               </form>
             </>
