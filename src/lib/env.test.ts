@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readEnv } from "./env";
+import { readEnv, readSupabaseEnv } from "./env";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -25,5 +25,40 @@ describe("readEnv", () => {
     vi.stubEnv("SEARCH_API_KEY", "tvly-abc");
     expect(() => readEnv()).toThrow("DATABASE_URL must be a Postgres URL");
     expect(() => readEnv()).not.toThrow("secret");
+  });
+});
+
+describe("readSupabaseEnv", () => {
+  it("returns valid values", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcdef.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "public-key");
+    expect(readSupabaseEnv().NEXT_PUBLIC_SUPABASE_URL).toBe(
+      "https://abcdef.supabase.co",
+    );
+  });
+
+  it("names every missing value", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", undefined);
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", undefined);
+    expect(() => readSupabaseEnv()).toThrow(
+      "NEXT_PUBLIC_SUPABASE_URL is missing. NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing",
+    );
+  });
+
+  it("rejects a database URL pasted as the project URL", () => {
+    vi.stubEnv(
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "postgresql://user:secret@host:5432/postgres",
+    );
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "public-key");
+    expect(() => readSupabaseEnv()).toThrow("must look like");
+    expect(() => readSupabaseEnv()).not.toThrow("secret");
+  });
+
+  it("refuses a secret key in a public setting without repeating it", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcdef.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_secret_abc123");
+    expect(() => readSupabaseEnv()).toThrow("not a secret key");
+    expect(() => readSupabaseEnv()).not.toThrow("abc123");
   });
 });
