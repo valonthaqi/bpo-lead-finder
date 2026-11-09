@@ -219,3 +219,12 @@ This replaces the "one user, no login" default.
 - **`src/proxy.ts` guards every route.** It refreshes the session cookie, sends signed-out visitors to `/login`, and answers signed-out API calls with a 401 instead of a redirect.
 - **Email confirmation is turned off in the Supabase dashboard,** so a new account can sign in straight away and the free plan's email limit doesn't block the demo. If it's left on, the form says so instead of failing silently.
 - **The public key setting is named `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,** after Supabase's current name, and the app refuses to start if it holds a secret key (`sb_secret_`), because anything named `NEXT_PUBLIC_` is sent to the browser.
+
+## 2026-11-09: Accounts are created by an admin
+
+Open signup is gone. Before the app goes online, a stranger must not be able to create an account and spend the Tavily credits.
+
+- **The admin creates users in the Supabase dashboard** (Authentication → Users → Add user). An admin page in the app would need the Supabase secret key on the server, plus an admin check and its own forms. The dashboard needs no code and keeps the secret key out of the app entirely.
+- **The login page only logs in,** and tells people to ask their admin for access.
+- **Signups are also turned off in Supabase** ("Allow new users to sign up"). Removing the form alone isn't enough, because the publishable key is public and Supabase's signup API could still be called directly.
+- **No password length rule on login.** The admin sets passwords in the dashboard, where Supabase's own minimum applies. The form only checks that a password was entered.
