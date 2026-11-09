@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readEnv, readSupabaseEnv } from "./env";
+import { readEnv, readSupabaseAdminEnv, readSupabaseEnv } from "./env";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -60,5 +60,28 @@ describe("readSupabaseEnv", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_secret_abc123");
     expect(() => readSupabaseEnv()).toThrow("not a secret key");
     expect(() => readSupabaseEnv()).not.toThrow("abc123");
+  });
+});
+
+describe("readSupabaseAdminEnv", () => {
+  it("returns the URL and the secret key", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcdef.supabase.co");
+    vi.stubEnv("SUPABASE_SECRET_KEY", "sb_secret_abc123");
+    expect(readSupabaseAdminEnv().SUPABASE_SECRET_KEY).toBe("sb_secret_abc123");
+  });
+
+  it("names a missing secret key", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcdef.supabase.co");
+    vi.stubEnv("SUPABASE_SECRET_KEY", undefined);
+    expect(() => readSupabaseAdminEnv()).toThrow(
+      "SUPABASE_SECRET_KEY is missing",
+    );
+  });
+
+  it("refuses a publishable key without repeating it", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcdef.supabase.co");
+    vi.stubEnv("SUPABASE_SECRET_KEY", "sb_publishable_xyz789");
+    expect(() => readSupabaseAdminEnv()).toThrow("must be a secret key");
+    expect(() => readSupabaseAdminEnv()).not.toThrow("xyz789");
   });
 });
