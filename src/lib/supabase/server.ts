@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { readSupabaseEnv } from "@/lib/env";
+import { readRole } from "@/lib/roles";
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -26,8 +28,21 @@ export async function createSupabaseServerClient() {
   );
 }
 
-export async function getSignedInEmail() {
+export async function getSignedInUser() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();
-  return data?.claims.email ?? null;
+  if (!data) return null;
+  return {
+    email: data.claims.email ?? "",
+    role: readRole(data.claims.app_metadata),
+  };
+}
+
+export async function requireAdmin() {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getUser();
+  if (!data.user || readRole(data.user.app_metadata) !== "admin") {
+    redirect("/");
+  }
+  return { id: data.user.id };
 }
