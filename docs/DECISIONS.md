@@ -209,3 +209,13 @@ Only the interface changed. No pipeline, database, filter, CSV or route file was
 - **More room between elements:** wider page padding, larger card padding and titles, taller table rows with uppercase column headers, a full-width table inside its card, and more space in the score panel and progress stats.
 
 Only the interface changed.
+
+## 2026-11-09: Login and signup with Supabase Auth
+
+This replaces the "one user, no login" default.
+
+- **Supabase Auth instead of our own tables.** The database is already on Supabase, so its auth needs no new service, and it handles password hashing and session tokens. Building it ourselves would have meant about 70 more lines plus a users table, a sessions table and their tests. The cost is two packages (`@supabase/supabase-js` and `@supabase/ssr`) and two settings, and the users live in Supabase's own `auth` schema rather than in the Drizzle schema.
+- **Shared team data.** Login only controls who can open the app. Every signed-in user sees the same searches, results and settings, like one partnerships team, so no existing table changed.
+- **`src/proxy.ts` guards every route.** It refreshes the session cookie, sends signed-out visitors to `/login`, and answers signed-out API calls with a 401 instead of a redirect.
+- **Email confirmation is turned off in the Supabase dashboard,** so a new account can sign in straight away and the free plan's email limit doesn't block the demo. If it's left on, the form says so instead of failing silently.
+- **The public key setting is named `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,** after Supabase's current name, and the app refuses to start if it holds a secret key (`sb_secret_`), because anything named `NEXT_PUBLIC_` is sent to the browser.
