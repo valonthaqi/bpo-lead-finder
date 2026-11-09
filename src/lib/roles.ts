@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { newPasswordSchema } from "./passwords";
 
 export const ROLES = ["admin", "user"] as const;
 
@@ -9,8 +10,6 @@ export const ROLE_LABELS: Record<Role, string> = {
   user: "User",
 };
 
-export const MIN_PASSWORD_LENGTH = 8;
-
 const roleSchema = z.enum(ROLES);
 
 export function readRole(appMetadata: unknown): Role {
@@ -20,12 +19,7 @@ export function readRole(appMetadata: unknown): Role {
 
 const newUserSchema = z.object({
   email: z.email("Enter a valid email address."),
-  password: z
-    .string()
-    .min(
-      MIN_PASSWORD_LENGTH,
-      `Use at least ${MIN_PASSWORD_LENGTH} characters for the password.`,
-    ),
+  password: newPasswordSchema,
   role: roleSchema,
 });
 

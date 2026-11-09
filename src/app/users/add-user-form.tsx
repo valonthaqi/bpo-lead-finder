@@ -15,7 +15,8 @@ import {
   NativeSelect,
   NativeSelectOption,
 } from "@/components/ui/native-select";
-import { MIN_PASSWORD_LENGTH, ROLE_LABELS, ROLES } from "@/lib/roles";
+import { MIN_PASSWORD_LENGTH } from "@/lib/passwords";
+import { ROLE_LABELS, ROLES } from "@/lib/roles";
 import { addUser } from "./actions";
 
 export function AddUserForm() {
@@ -31,7 +32,8 @@ export function AddUserForm() {
           <h2>Add a user</h2>
         </CardTitle>
         <CardDescription>
-          Share the email and password with them. They can log in right away.
+          Share the email and password with them. They can log in right away and
+          change the password under Account.
         </CardDescription>
       </CardHeader>
       <CardContent>
