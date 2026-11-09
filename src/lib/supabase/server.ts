@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { readSupabaseEnv } from "@/lib/env";
-import { readRole } from "@/lib/roles";
+import { readMember } from "@/lib/permissions";
+import { isAdminRole, readRole } from "@/lib/roles";
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -41,8 +42,8 @@ export async function getSignedInUser() {
 export async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
-  if (!data.user || readRole(data.user.app_metadata) !== "admin") {
-    redirect("/");
-  }
-  return { id: data.user.id };
+  if (!data.user) redirect("/");
+  const member = readMember(data.user);
+  if (!isAdminRole(member.role)) redirect("/");
+  return member;
 }

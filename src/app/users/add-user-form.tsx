@@ -16,7 +16,7 @@ import {
   NativeSelectOption,
 } from "@/components/ui/native-select";
 import { MIN_PASSWORD_LENGTH } from "@/lib/passwords";
-import { ROLE_LABELS, ROLES } from "@/lib/roles";
+import { ASSIGNABLE_ROLES, ROLE_LABELS } from "@/lib/roles";
 import { addUser } from "./actions";
 
 export function AddUserForm() {
@@ -74,7 +74,7 @@ export function AddUserForm() {
               className="w-full"
               defaultValue="user"
             >
-              {ROLES.map((role) => (
+              {ASSIGNABLE_ROLES.map((role) => (
                 <NativeSelectOption key={role} value={role}>
                   {ROLE_LABELS[role]}
                 </NativeSelectOption>

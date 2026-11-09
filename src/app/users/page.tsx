@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { readRole } from "@/lib/roles";
+import { canManageUser, canSeeUser, readMember } from "@/lib/permissions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/supabase/server";
 import { AddUserForm } from "./add-user-form";
@@ -26,17 +26,28 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function UsersPage() {
-  const admin = await requireAdmin();
+  const actor = await requireAdmin();
+  const isOwner = actor.role === "owner";
   const { data, error } =
     await createSupabaseAdminClient().auth.admin.listUsers({ perPage: 1000 });
   if (error) throw error;
 
+  const emailsById = new Map(
+    data.users.map((user) => [user.id, user.email ?? ""]),
+  );
   const users = data.users
-    .map((user) => ({
+    .map((user) => ({ user, member: readMember(user) }))
+    .filter(({ member }) => canSeeUser(actor, member))
+    .map(({ user, member }) => ({
       id: user.id,
       email: user.email ?? "",
-      role: readRole(user.app_metadata),
+      role: member.role,
       lastSignInAt: user.last_sign_in_at ?? null,
+      addedBy: member.createdBy
+        ? (emailsById.get(member.createdBy) ?? null)
+        : null,
+      isCurrentUser: user.id === actor.id,
+      canManage: canManageUser(actor, member),
     }))
     .sort((a, b) => a.email.localeCompare(b.email));
 
@@ -48,8 +59,11 @@ export default async function UsersPage() {
             <h1 className="text-xl">Users</h1>
           </CardTitle>
           <CardDescription>
-            Admins can add users and change roles. Users can run searches and
-            export results.
+            {isOwner
+              ? "As the owner, you see everyone and can change any role. Nobody can change yours."
+              : "You see the people you added, and can change their roles or remove them."}{" "}
+            Users can run searches and export results; admins can also add
+            people.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,6 +72,11 @@ export default async function UsersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Email</TableHead>
+                  {isOwner && (
+                    <TableHead className="hidden lg:table-cell">
+                      Added by
+                    </TableHead>
+                  )}
                   <TableHead className="hidden md:table-cell">
                     Last sign-in
                   </TableHead>
@@ -69,11 +88,7 @@ export default async function UsersPage() {
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <UserRow
-                    key={user.id}
-                    user={user}
-                    isCurrentUser={user.id === admin.id}
-                  />
+                  <UserRow key={user.id} user={user} showAddedBy={isOwner} />
                 ))}
               </TableBody>
             </Table>

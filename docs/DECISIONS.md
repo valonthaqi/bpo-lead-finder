@@ -242,3 +242,13 @@ Admins choose the first password, so everyone can replace it on an Account page,
 - **The new password is typed twice,** must be at least 8 characters (the same rule as when an admin adds someone), and must differ from the current one.
 - **Every other session is signed out afterwards** (`signOut({ scope: "others" })`), so anyone who knew the admin-chosen password loses access. The current session stays signed in.
 - **No email reset link.** "Forgot password" would need Supabase to send email, which the free plan heavily rate-limits. Until then, an admin can remove and re-add someone who forgets theirs.
+
+## 2026-11-09: One owner, and admins only manage the people they added
+
+- **A third role, Owner, above Admin.** The owner sees everyone, can change any role and remove anyone, and nobody, the owner included, can change or remove the owner. It's stored in `app_metadata` like the other roles, so only the server can set it.
+- **The owner is set with `npm run users:make-owner -- email`,** which replaces `users:make-admin`. The forms and server actions only accept Admin and User, so the owner role can't be given from the app. The script refuses if another account is already the owner, so there's only ever one. A role was chosen over an `OWNER_EMAIL` setting so the owner's email doesn't need to appear anywhere in the code.
+- **Every new user records who added them** (`created_by` in `app_metadata`). An admin sees only themselves and the people they added, and can only change or remove those. People added before this change have no creator, so only the owner sees them.
+- **The rules live in one pure module,** `src/lib/permissions.ts` (`canSeeUser`, `canManageUser`), covered by unit tests. The Users page uses it to filter rows and hide controls. Every role change and removal looks up the target user and checks it again on the server, so a hand-made request can't get round the page.
+- **Changing a role keeps the rest of `app_metadata`,** including `created_by`, by copying the existing values before setting the new role.
+- **The owner sees an "Added by" column.** Admins don't, since everything they see was added by them.
+- **If an admin is removed,** the people they added stay, and only the owner can see or manage them.
