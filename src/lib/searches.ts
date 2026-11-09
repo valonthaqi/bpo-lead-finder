@@ -2,6 +2,7 @@ import { count, desc, eq, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { companies, DEFAULT_SETTINGS, searches, settings } from "./db/schema";
 import type { Filters } from "./filters";
+import type { Member } from "./permissions";
 import { ACTIVE_STATUSES } from "./search-status";
 
 const SETTINGS_ROW_ID = 1;
@@ -26,7 +27,10 @@ export async function saveSettings(values: Settings) {
     .onConflictDoUpdate({ target: settings.id, set: values });
 }
 
-export async function createSearch(filters: Filters, creditCap?: number) {
+export async function createSearch(
+  filters: Filters & { userId?: string },
+  creditCap?: number,
+) {
   const [search] = await db
     .insert(searches)
     .values({
@@ -45,10 +49,11 @@ export async function getSearch(searchId: number) {
   return search ?? null;
 }
 
-export function listRecentSearches() {
+export function listRecentSearches(viewer: Member) {
   return db
     .select()
     .from(searches)
+    .where(viewer.role === "owner" ? undefined : eq(searches.userId, viewer.id))
     .orderBy(desc(searches.id))
     .limit(RECENT_SEARCH_LIMIT);
 }

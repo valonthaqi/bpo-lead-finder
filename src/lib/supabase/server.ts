@@ -39,6 +39,16 @@ export async function getSignedInUser() {
   };
 }
 
+export async function getViewer() {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data) return null;
+  return readMember({
+    id: data.claims.sub,
+    app_metadata: data.claims.app_metadata,
+  });
+}
+
 export async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();

@@ -4,6 +4,7 @@ import { createTestDb } from "@/lib/db/test-db";
 
 const testDb = vi.hoisted(() => ({ current: null as unknown }));
 const runSearch = vi.hoisted(() => vi.fn());
+const getViewer = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/db", () => ({
   get db() {
@@ -11,6 +12,9 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 vi.mock("@/lib/pipeline/run-search", () => ({ runSearch }));
+vi.mock("@/lib/supabase/server", () => ({ getViewer }));
+
+const VIEWER_ID = "00000000-0000-4000-8000-000000000002";
 
 const { POST } = await import("./route");
 
@@ -32,6 +36,11 @@ function post(body: unknown) {
 beforeEach(async () => {
   testDb.current = await createTestDb();
   runSearch.mockClear();
+  getViewer.mockResolvedValue({
+    id: VIEWER_ID,
+    role: "user",
+    createdBy: null,
+  });
 });
 
 describe("POST /api/searches", () => {
@@ -43,6 +52,24 @@ describe("POST /api/searches", () => {
     expect(response.status).toBe(201);
     const { id } = await response.json();
     expect(runSearch).toHaveBeenCalledWith(id);
+  });
+
+  it("records who started the search", async () => {
+    runSearch.mockReturnValue(new Promise(() => {}));
+
+    const { id } = await (await post(validFilters)).json();
+
+    const db = testDb.current as Awaited<ReturnType<typeof createTestDb>>;
+    const [search] = await db.select().from(searches);
+    expect(search.id).toBe(id);
+    expect(search.userId).toBe(VIEWER_ID);
+  });
+
+  it("refuses a request without a signed-in user", async () => {
+    getViewer.mockResolvedValue(null);
+    const response = await post(validFilters);
+    expect(response.status).toBe(401);
+    expect(runSearch).not.toHaveBeenCalled();
   });
 
   it("rejects invalid filters", async () => {

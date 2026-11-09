@@ -19,6 +19,7 @@ const {
   getSettings,
   getSearch,
   hasActiveSearch,
+  listRecentSearches,
   markActiveSearchesInterrupted,
   saveSettings,
 } = await import("./searches");
@@ -128,3 +129,40 @@ describe("getCompaniesPage", () => {
 function eqId(id: number) {
   return eq(searches.id, id);
 }
+
+describe("listRecentSearches", () => {
+  const ownerId = "00000000-0000-4000-8000-000000000001";
+  const aliceId = "00000000-0000-4000-8000-000000000002";
+  const bobId = "00000000-0000-4000-8000-000000000003";
+
+  async function createThreeSearches() {
+    const alices = await createSearch({ ...filters, userId: aliceId }, 1);
+    const bobs = await createSearch({ ...filters, userId: bobId }, 1);
+    const unowned = await createSearch(filters, 1);
+    return { alices, bobs, unowned };
+  }
+
+  it("shows the owner every search, newest first", async () => {
+    const { alices, bobs, unowned } = await createThreeSearches();
+    const list = await listRecentSearches({
+      id: ownerId,
+      role: "owner",
+      createdBy: null,
+    });
+    expect(list.map((search) => search.id)).toEqual([
+      unowned.id,
+      bobs.id,
+      alices.id,
+    ]);
+  });
+
+  it("shows everyone else only their own searches", async () => {
+    const { alices } = await createThreeSearches();
+    const list = await listRecentSearches({
+      id: aliceId,
+      role: "admin",
+      createdBy: ownerId,
+    });
+    expect(list.map((search) => search.id)).toEqual([alices.id]);
+  });
+});

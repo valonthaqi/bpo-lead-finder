@@ -2,8 +2,10 @@ import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { describeFilters } from "@/lib/filters";
+import { canViewSearch } from "@/lib/permissions";
 import { isActive } from "@/lib/search-status";
 import { getCompaniesPage, getSearch } from "@/lib/searches";
+import { getViewer } from "@/lib/supabase/server";
 import { NoResults } from "./no-results";
 import { ProgressPanel } from "./progress-panel";
 import { ResultsTable } from "./results-table";
@@ -21,8 +23,11 @@ export default async function SearchPage({
   searchParams: Promise<{ page?: string | string[] }>;
 }) {
   const { id } = await params;
-  const search = await getSearch(Number(id));
-  if (!search) notFound();
+  const [search, viewer] = await Promise.all([
+    getSearch(Number(id)),
+    getViewer(),
+  ]);
+  if (!search || !viewer || !canViewSearch(viewer, search)) notFound();
 
   const page = readPageNumber((await searchParams).page);
   const { rows, total, pageCount } = await getCompaniesPage(search.id, page);
