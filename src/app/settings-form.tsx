@@ -41,7 +41,7 @@ export function SettingsForm({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <NumberField
             id="credit-cap"
             label="Credit cap per search"
@@ -92,7 +92,7 @@ function NumberField({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
@@ -102,7 +102,7 @@ function NumberField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
-      <p className="text-xs text-muted-foreground">{help}</p>
+      <p className="text-xs leading-relaxed text-muted-foreground">{help}</p>
     </div>
   );
 }

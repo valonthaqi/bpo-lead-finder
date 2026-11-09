@@ -22,18 +22,18 @@ export function CompanyRow({ company }: { company: Company }) {
       <TableRow className="[&>td]:align-top">
         <TableCell className="whitespace-normal">
           <p className="font-medium">{company.name}</p>
-          <p className="text-xs">
+          <p className="mt-1 text-xs">
             {company.domains.map((domain) => (
               <span key={domain} className="mr-2">
                 <ExternalLink url={`https://${domain}`} label={domain} />
               </span>
             ))}
           </p>
-          <div className="mt-1 sm:hidden">
+          <div className="mt-2 sm:hidden">
             <FitBadge label={company.fitLabel} score={company.score} />
           </div>
           {company.isPreliminary && (
-            <Badge variant="outline" className="mt-1">
+            <Badge variant="outline" className="mt-2">
               Preliminary
             </Badge>
           )}
@@ -46,7 +46,7 @@ export function CompanyRow({ company }: { company: Company }) {
         </TableCell>
         <TableCell className="hidden whitespace-normal lg:table-cell">
           <p>{company.phones[0] ?? "Not found"}</p>
-          <p className="wrap-anywhere text-muted-foreground">
+          <p className="mt-1 wrap-anywhere text-muted-foreground">
             {company.emails[0] ?? "Not found"}
           </p>
         </TableCell>

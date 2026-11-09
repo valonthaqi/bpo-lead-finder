@@ -60,7 +60,7 @@ export function ProgressPanel({
 
   return (
     <Card>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <StatusBadge status={search.status} />
           {!isRunning && (
@@ -82,7 +82,7 @@ export function ProgressPanel({
             {error}
           </p>
         )}
-        <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-5 text-sm sm:grid-cols-4">
           <Stat
             label="Queries"
             value={`${search.queriesDone} of ${search.queriesPlanned}`}
@@ -106,7 +106,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-semibold tabular-nums">{value}</dd>
+      <dd className="mt-1 text-lg font-semibold tabular-nums">{value}</dd>
     </div>
   );
 }

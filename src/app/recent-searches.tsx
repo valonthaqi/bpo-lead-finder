@@ -21,7 +21,7 @@ export function RecentSearches({ searches }: { searches: RecentSearch[] }) {
       </CardHeader>
       <CardContent>
         {searches.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-8 text-center">
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
             <HistoryIcon
               className="size-6 text-muted-foreground"
               aria-hidden="true"
@@ -32,12 +32,12 @@ export function RecentSearches({ searches }: { searches: RecentSearch[] }) {
             </p>
           </div>
         ) : (
-          <ul className="-my-1 divide-y">
+          <ul className="-my-2 divide-y">
             {searches.map((search) => (
               <li key={search.id}>
                 <Link
                   href={`/searches/${search.id}`}
-                  className="-mx-2 flex flex-wrap items-center justify-between gap-2 rounded-md px-2 py-3 text-sm hover:bg-muted"
+                  className="-mx-3 flex flex-wrap items-center justify-between gap-3 rounded-lg px-3 py-4 text-sm hover:bg-muted"
                 >
                   <span className="font-medium">{describeFilters(search)}</span>
                   <span className="flex items-center gap-3 text-muted-foreground">

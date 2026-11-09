@@ -12,8 +12,8 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
-      <div className="min-w-0 space-y-6">
+    <div className="grid items-start gap-8 lg:grid-cols-[1fr_22rem]">
+      <div className="min-w-0 space-y-8">
         <SearchForm />
         <RecentSearches searches={recentSearches} />
       </div>
