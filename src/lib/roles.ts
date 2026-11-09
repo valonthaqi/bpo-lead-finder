@@ -1,20 +1,29 @@
 import { z } from "zod";
 import { newPasswordSchema } from "./passwords";
 
-export const ROLES = ["admin", "user"] as const;
+export const ASSIGNABLE_ROLES = ["admin", "user"] as const;
 
-export type Role = (typeof ROLES)[number];
+export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
+
+export type Role = AssignableRole | "owner";
 
 export const ROLE_LABELS: Record<Role, string> = {
+  owner: "Owner",
   admin: "Admin",
   user: "User",
 };
 
-const roleSchema = z.enum(ROLES);
+const roleSchema = z.enum(ASSIGNABLE_ROLES);
+
+const storedRoleSchema = z.enum(["owner", ...ASSIGNABLE_ROLES]);
 
 export function readRole(appMetadata: unknown): Role {
-  const result = z.object({ role: roleSchema }).safeParse(appMetadata);
+  const result = z.object({ role: storedRoleSchema }).safeParse(appMetadata);
   return result.success ? result.data.role : "user";
+}
+
+export function isAdminRole(role: Role) {
+  return role === "owner" || role === "admin";
 }
 
 const newUserSchema = z.object({
