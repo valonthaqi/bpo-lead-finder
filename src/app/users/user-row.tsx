@@ -9,7 +9,7 @@ import {
   NativeSelectOption,
 } from "@/components/ui/native-select";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { ROLE_LABELS, ROLES, type Role } from "@/lib/roles";
+import { ASSIGNABLE_ROLES, ROLE_LABELS, type Role } from "@/lib/roles";
 import { changeRole, removeUser } from "./actions";
 
 type User = {
@@ -17,6 +17,9 @@ type User = {
   email: string;
   role: Role;
   lastSignInAt: string | null;
+  addedBy: string | null;
+  isCurrentUser: boolean;
+  canManage: boolean;
 };
 
 const EMPTY_STATE = { error: null, message: null };
@@ -32,10 +35,10 @@ function formatSignIn(lastSignInAt: string | null) {
 
 export function UserRow({
   user,
-  isCurrentUser,
+  showAddedBy,
 }: {
   user: User;
-  isCurrentUser: boolean;
+  showAddedBy: boolean;
 }) {
   const [roleState, roleAction, isSavingRole] = useActionState(
     changeRole,
@@ -60,7 +63,7 @@ export function UserRow({
       <TableCell className="whitespace-normal">
         <p className="wrap-anywhere font-medium">
           {user.email}
-          {isCurrentUser && (
+          {user.isCurrentUser && (
             <Badge variant="secondary" className="ml-2">
               You
             </Badge>
@@ -72,11 +75,18 @@ export function UserRow({
           </p>
         )}
       </TableCell>
+      {showAddedBy && (
+        <TableCell className="hidden whitespace-normal text-muted-foreground lg:table-cell">
+          <span className="wrap-anywhere">
+            {user.addedBy ?? "Not recorded"}
+          </span>
+        </TableCell>
+      )}
       <TableCell className="hidden text-muted-foreground md:table-cell">
         {formatSignIn(user.lastSignInAt)}
       </TableCell>
       <TableCell>
-        {isCurrentUser ? (
+        {!user.canManage ? (
           ROLE_LABELS[user.role]
         ) : (
           <form action={roleAction}>
@@ -88,7 +98,7 @@ export function UserRow({
               aria-label={`Role for ${user.email}`}
               onChange={(event) => event.currentTarget.form?.requestSubmit()}
             >
-              {ROLES.map((role) => (
+              {ASSIGNABLE_ROLES.map((role) => (
                 <NativeSelectOption key={role} value={role}>
                   {ROLE_LABELS[role]}
                 </NativeSelectOption>
@@ -98,7 +108,7 @@ export function UserRow({
         )}
       </TableCell>
       <TableCell className="text-right">
-        {!isCurrentUser && (
+        {user.canManage && (
           <form action={removeAction} onSubmit={confirmRemoval}>
             <input type="hidden" name="userId" value={user.id} />
             <Button

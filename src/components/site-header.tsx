@@ -8,6 +8,7 @@ import Link from "next/link";
 import { signOut } from "@/app/login/actions";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { isAdminRole } from "@/lib/roles";
 import { getSignedInUser } from "@/lib/supabase/server";
 
 export async function SiteHeader() {
@@ -40,7 +41,7 @@ export async function SiteHeader() {
                   </span>
                 </Link>
               </Button>
-              {user.role === "admin" && (
+              {isAdminRole(user.role) && (
                 <Button variant="outline" asChild>
                   <Link href="/users" aria-label="Users">
                     <UsersIcon aria-hidden="true" />
