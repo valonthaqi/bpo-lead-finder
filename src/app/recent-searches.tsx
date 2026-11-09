@@ -11,13 +11,22 @@ type RecentSearch = {
   campaignId: string;
   status: string;
   companiesFound: number;
+  ranBy?: string | null;
 };
 
-export function RecentSearches({ searches }: { searches: RecentSearch[] }) {
+export function RecentSearches({
+  searches,
+  showRanBy = false,
+}: {
+  searches: RecentSearch[];
+  showRanBy?: boolean;
+}) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent searches</CardTitle>
+        <CardTitle>
+          {showRanBy ? "Everyone's recent searches" : "Your recent searches"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {searches.length === 0 ? (
@@ -39,7 +48,16 @@ export function RecentSearches({ searches }: { searches: RecentSearch[] }) {
                   href={`/searches/${search.id}`}
                   className="-mx-3 flex flex-wrap items-center justify-between gap-3 rounded-lg px-3 py-4 text-sm hover:bg-muted"
                 >
-                  <span className="font-medium">{describeFilters(search)}</span>
+                  <span className="min-w-0">
+                    <span className="block font-medium">
+                      {describeFilters(search)}
+                    </span>
+                    {showRanBy && (
+                      <span className="mt-0.5 block wrap-anywhere text-xs text-muted-foreground">
+                        {search.ranBy ?? "Run before accounts existed"}
+                      </span>
+                    )}
+                  </span>
                   <span className="flex items-center gap-3 text-muted-foreground">
                     {search.companiesFound} companies
                     <StatusBadge status={search.status} />

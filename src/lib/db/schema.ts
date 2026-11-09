@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 export const DEFAULT_SETTINGS = {
@@ -28,6 +29,7 @@ export const searches = pgTable("searches", {
   countryId: text("country_id").notNull(),
   marketId: text("market_id").notNull(),
   campaignId: text("campaign_id").notNull(),
+  userId: uuid("user_id"),
   status: text("status").notNull().default("queued"),
   message: text("message"),
   creditCap: integer("credit_cap").notNull(),

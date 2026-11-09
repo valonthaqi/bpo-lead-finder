@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canManageUser,
+  canViewSearch,
   canSeeUser,
   readMember,
   type Member,
@@ -114,5 +115,19 @@ describe("canManageUser", () => {
 
   it("never lets a user manage anyone", () => {
     expect(canManageUser({ ...user, role: "user" }, addedByAdmin)).toBe(false);
+  });
+});
+
+describe("canViewSearch", () => {
+  it("lets the owner view every search, including ones with no recorded user", () => {
+    expect(canViewSearch(owner, { userId: ADMIN_ID })).toBe(true);
+    expect(canViewSearch(owner, { userId: null })).toBe(true);
+  });
+
+  it("lets everyone else view only their own searches", () => {
+    expect(canViewSearch(admin, { userId: ADMIN_ID })).toBe(true);
+    expect(canViewSearch(admin, { userId: OTHER_ADMIN_ID })).toBe(false);
+    expect(canViewSearch(admin, { userId: null })).toBe(false);
+    expect(canViewSearch(addedByAdmin, { userId: ADMIN_ID })).toBe(false);
   });
 });

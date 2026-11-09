@@ -28,3 +28,10 @@ export function canManageUser(actor: Member, target: Member) {
   if (actor.role === "owner") return true;
   return actor.role === "admin" && target.createdBy === actor.id;
 }
+
+export function canViewSearch(
+  viewer: Member,
+  search: { userId: string | null },
+) {
+  return viewer.role === "owner" || search.userId === viewer.id;
+}
