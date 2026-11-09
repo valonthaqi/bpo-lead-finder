@@ -78,7 +78,8 @@ export function SearchForm() {
                 <NativeSelect
                   id={field.name}
                   name={field.name}
-                  className="h-10 w-full"
+                  size="lg"
+                  className="w-full"
                 >
                   {field.options.map((option) => (
                     <NativeSelectOption key={option.id} value={option.id}>
